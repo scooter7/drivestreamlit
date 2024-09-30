@@ -34,12 +34,8 @@ def chat_with_document(content, question):
     # Debug the response to check its structure
     st.write(response)  # Output the response to Streamlit to inspect its structure
 
-    # Access the response content correctly
-    try:
-        return response['choices'][0]['message']['content']  # Adjust this if structure is different
-    except KeyError:
-        st.error("Could not find 'message' in response. Check response structure.")
-        return None
+    # Access the content from the response message based on your structure
+    return response['choices'][0]['message']['content']  # Access the content of the first choice
 
 # Streamlit App
 folder_id = st.text_input("Enter the Google Drive folder ID")
