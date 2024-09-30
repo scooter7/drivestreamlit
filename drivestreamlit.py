@@ -24,7 +24,7 @@ def get_google_docs_from_folder(folder_id):
 
 # OpenAI Chat
 def chat_with_document(content, question):
-    response = openai.Completion.create(
+    response = openai.chat.completions.create(
         model="gpt-4",
         prompt=f"{content}\n\nQuestion: {question}",
         max_tokens=150
