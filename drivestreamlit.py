@@ -22,7 +22,7 @@ def get_google_docs_from_folder(folder_id):
 
 # OpenAI Chat with correct API syntax
 def chat_with_document(content, question):
-    response =  openai.chat.completions.create(
+    response = openai.chat.completions.create(
         model="gpt-4o-mini",  # Use GPT-4o-mini model
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
@@ -32,10 +32,14 @@ def chat_with_document(content, question):
     )
     
     # Debug the response to check its structure
-    st.write(response)  # Optional: write the response to Streamlit to inspect its structure
+    st.write(response)  # Output the response to Streamlit to inspect its structure
 
-    # Correct access of response content based on the API response structure
-    return response['choices'][0]['message']['content']
+    # Access the response content correctly
+    try:
+        return response['choices'][0]['message']['content']  # Adjust this if structure is different
+    except KeyError:
+        st.error("Could not find 'message' in response. Check response structure.")
+        return None
 
 # Streamlit App
 folder_id = st.text_input("Enter the Google Drive folder ID")
@@ -52,5 +56,5 @@ if folder_id:
         
         if user_question:
             answer = chat_with_document(doc_content, user_question)
-            st.write(f"Answer: {answer}")
-
+            if answer:
+                st.write(f"Answer: {answer}")
