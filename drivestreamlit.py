@@ -57,13 +57,16 @@ doc_choices = [doc['name'] for doc in docs]
 selected_docs = st.multiselect("Select one or more documents to query", doc_choices)
 
 if selected_docs:
-    doc_ids = [doc['id'] for doc in docs if doc['name'] in selected_docs]  # Get the corresponding doc IDs
-    for idx, doc_id in enumerate(doc_ids):
-        # Get document content from Google Docs
-        doc_content = get_document_content(doc_id)  # Fetch the actual document content
-        user_question = st.text_input(f"Ask a question about the document: {selected_docs[idx]}", key=f"question_{idx}")
-        
-        if user_question:
+    # Single text input area for entering the question
+    user_question = st.text_input("Ask a question to query across the selected documents")
+
+    if user_question:
+        for doc_name in selected_docs:
+            doc_id = next(doc['id'] for doc in docs if doc['name'] == doc_name)
+            # Get document content from Google Docs
+            doc_content = get_document_content(doc_id)
+            
+            # Query each document with the same question
             answer = chat_with_document(doc_content, user_question)
             if answer:
-                st.write(f"Answer for {selected_docs[idx]}: {answer}")
+                st.write(f"Answer for {doc_name}: {answer}")
