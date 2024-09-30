@@ -22,7 +22,7 @@ def get_google_docs_from_folder(folder_id):
 
 # OpenAI Chat with correct API syntax
 def chat_with_document(content, question):
-    response =  openai.ChatCompletion.create(
+    response =  openai.chat.completions.create(
         model="gpt-4o-mini",  # Use GPT-4o-mini model
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
