@@ -32,7 +32,7 @@ def chat_with_document(content, question):
     )
     
     # Extract the message content from the response
-    message_content = response['choices'][0]['message']['content']
+    message_content = response.choices[0].message.content  # Access the 'content' as an object attribute
     
     return message_content
 
