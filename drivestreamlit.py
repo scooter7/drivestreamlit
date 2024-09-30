@@ -1,12 +1,10 @@
 import streamlit as st
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
-from openai import OpenAI
+import openai  # Correct way to import OpenAI
 
 # Set up OpenAI API
-openai_api_key = st.secrets["openai"]["api_key"]  # Access OpenAI API key from Streamlit secrets
-client = OpenAI()
-client.api_key = openai_api_key  # Assign the OpenAI API key to the client
+openai.api_key = st.secrets["openai"]["api_key"]  # Access OpenAI API key from Streamlit secrets
 
 # Google Drive API setup
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
@@ -22,9 +20,9 @@ def get_google_docs_from_folder(folder_id):
     items = results.get('files', [])
     return items
 
-# OpenAI Chat with new API syntax
+# OpenAI Chat with correct API syntax
 def chat_with_document(content, question):
-    response = client.chat.completions.create(
+    response = openai.ChatCompletion.create(
         model="gpt-4o-mini",  # Use GPT-4o-mini model
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
@@ -37,7 +35,7 @@ def chat_with_document(content, question):
     st.write(response)  # Optional: write the response to Streamlit to inspect its structure
 
     # Correct access of response content based on the API response structure
-    return response.choices[0].message['content']
+    return response['choices'][0]['message']['content']
 
 # Streamlit App
 folder_id = st.text_input("Enter the Google Drive folder ID")
