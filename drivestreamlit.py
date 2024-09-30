@@ -22,10 +22,10 @@ def get_google_docs_from_folder(folder_id):
     items = results.get('files', [])
     return items
 
-# OpenAI Chat
+# OpenAI Chat with new API syntax
 def chat_with_document(content, question):
-    response = openai.ChatCompletion.create(
-        model="gpt-4",  # Using the GPT-4 model
+    response = openai.chat.completions.create(
+        model="gpt-4",
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": f"Here is the document content: {content}. Now, answer this question: {question}"}
