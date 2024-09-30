@@ -32,6 +32,8 @@ def chat_with_document(content, question):
         ],
         max_tokens=150
     )
+    
+    # Access the correct structure of the response
     return response['choices'][0]['message']['content']
 
 # Streamlit App
