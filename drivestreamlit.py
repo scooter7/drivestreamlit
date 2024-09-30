@@ -1,7 +1,7 @@
 import streamlit as st
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
-import openai  # Correct way to import OpenAI
+import openai
 
 # Set up OpenAI API
 openai.api_key = st.secrets["openai"]["api_key"]  # Access OpenAI API key from Streamlit secrets
@@ -53,3 +53,4 @@ if folder_id:
         if user_question:
             answer = chat_with_document(doc_content, user_question)
             st.write(f"Answer: {answer}")
+
