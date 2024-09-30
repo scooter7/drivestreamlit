@@ -22,7 +22,7 @@ def get_google_docs_from_folder(folder_id):
     items = results.get('files', [])
     return items
 
-# OpenAI Chat with new API syntax
+# OpenAI Chat with correct API syntax
 def chat_with_document(content, question):
     response = openai.chat.completions.create(
         model="gpt-4",
@@ -33,7 +33,10 @@ def chat_with_document(content, question):
         max_tokens=150
     )
     
-    # Access the correct structure of the response
+    # Debug the response to check its structure
+    st.write(response)  # Optional: write the response to Streamlit to inspect its structure
+    
+    # Correct access of response content
     return response['choices'][0]['message']['content']
 
 # Streamlit App
