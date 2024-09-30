@@ -2,6 +2,7 @@ import streamlit as st
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import openai
+import textwrap
 
 # Set up OpenAI API
 openai.api_key = st.secrets["openai"]["api_key"]  # Access OpenAI API key from Streamlit secrets
@@ -32,26 +33,33 @@ def get_document_content(doc_id):
                     content += text_run['textRun']['content']
     return content
 
-# OpenAI Chat with enhanced prompt for better accuracy
-def chat_with_document(content, question, context_keywords=None):
-    if context_keywords:
-        prompt = f"The following is the content of a document. Please search for information related to {', '.join(context_keywords)} and answer the question: {question}. If the information is not found, provide a summary of the relevant sections:\n\n{content}"
-    else:
-        prompt = f"Here is the document content: {content}. Now, answer this question: {question}"
+# Helper function to chunk the document content into smaller pieces
+def chunk_content(content, max_length=1500):
+    wrapped_content = textwrap.wrap(content, max_length)
+    return wrapped_content
+
+# OpenAI Chat with document content chunking for better accuracy
+def chat_with_document(content, question):
+    chunks = chunk_content(content)
+    full_answer = ""
+
+    for chunk in chunks:
+        prompt = f"Here is a section of the document: {chunk}\n\nBased on this section, answer the following question: {question}"
+        
+        response = openai.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=150
+        )
+        
+        # Extract the message content from the response
+        answer = response.choices[0].message.content
+        full_answer += answer + "\n"
     
-    response = openai.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": prompt}
-        ],
-        max_tokens=150
-    )
-    
-    # Extract the message content from the response
-    message_content = response.choices[0].message.content
-    
-    return message_content
+    return full_answer.strip()
 
 # Streamlit App
 folder_id = st.secrets["google"]["folder_id"]  # Use the folder ID from Streamlit secrets
@@ -64,7 +72,6 @@ selected_docs = st.multiselect("Select one or more documents to query", doc_choi
 if selected_docs:
     # Single text input area for entering the question
     user_question = st.text_input("Ask a question to query across the selected documents")
-    context_keywords = st.text_input("Enter keywords to focus on (optional)", placeholder="e.g., vacation policy, employee benefits")
 
     if user_question:
         for doc_name in selected_docs:
@@ -72,7 +79,7 @@ if selected_docs:
             # Get document content from Google Docs
             doc_content = get_document_content(doc_id)
             
-            # Query each document with the same question and optional context keywords
-            answer = chat_with_document(doc_content, user_question, context_keywords.split(',') if context_keywords else None)
+            # Query each document with the same question
+            answer = chat_with_document(doc_content, user_question)
             if answer:
                 st.write(f"Answer for {doc_name}: {answer}")
