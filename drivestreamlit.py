@@ -24,12 +24,15 @@ def get_google_docs_from_folder(folder_id):
 
 # OpenAI Chat
 def chat_with_document(content, question):
-    response = openai.chat.completions.create(
-        model="gpt-4",
-        prompt=f"{content}\n\nQuestion: {question}",
+    response = openai.ChatCompletion.create(
+        model="gpt-4",  # Using the GPT-4 model
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": f"Here is the document content: {content}. Now, answer this question: {question}"}
+        ],
         max_tokens=150
     )
-    return response['choices'][0]['text']
+    return response['choices'][0]['message']['content']
 
 # Streamlit App
 folder_id = st.text_input("Enter the Google Drive folder ID")
