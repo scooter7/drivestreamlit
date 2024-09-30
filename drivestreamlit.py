@@ -38,25 +38,26 @@ def chunk_content(content, max_length=1500):
     wrapped_content = textwrap.wrap(content, max_length)
     return wrapped_content
 
-# OpenAI Chat with document content chunking for better accuracy
+# OpenAI Chat with document content chunking for better accuracy and concise responses
 def chat_with_document(content, question):
     chunks = chunk_content(content)
     full_answer = ""
 
     for chunk in chunks:
-        prompt = f"Here is a section of the document: {chunk}\n\nBased on this section, answer the following question: {question}"
+        prompt = f"Here is a section of the document: {chunk}\n\nAnswer the question concisely and focus only on relevant information: {question}"
         
         response = openai.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "system", "content": "You are a concise and helpful assistant."},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=150
+            max_tokens=100,  # Limit the number of tokens to enforce concise responses
+            temperature=0.5  # Adjust temperature to avoid overly verbose responses
         )
         
         # Extract the message content from the response
-        answer = response.choices[0].message.content
+        answer = response.choices[0].message.content.strip()
         full_answer += answer + "\n"
     
     return full_answer.strip()
