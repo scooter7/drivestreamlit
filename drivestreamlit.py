@@ -49,19 +49,21 @@ def chat_with_document(content, question):
     return message_content
 
 # Streamlit App
-folder_id = st.text_input("Enter the Google Drive folder ID")
-if folder_id:
-    docs = get_google_docs_from_folder(folder_id)
-    doc_choices = [doc['name'] for doc in docs]
-    selected_doc = st.selectbox("Select a document to query", doc_choices)
+folder_id = st.secrets["google"]["folder_id"]  # Use the folder ID from Streamlit secrets
+docs = get_google_docs_from_folder(folder_id)
+doc_choices = [doc['name'] for doc in docs]
 
-    if selected_doc:
-        doc_id = next(doc['id'] for doc in docs if doc['name'] == selected_doc)
+# Multi-select for selecting multiple Google Docs
+selected_docs = st.multiselect("Select one or more documents to query", doc_choices)
+
+if selected_docs:
+    doc_ids = [doc['id'] for doc in docs if doc['name'] in selected_docs]  # Get the corresponding doc IDs
+    for doc_id in doc_ids:
         # Get document content from Google Docs
         doc_content = get_document_content(doc_id)  # Fetch the actual document content
-        user_question = st.text_input("Ask a question about the document")
+        user_question = st.text_input(f"Ask a question about the document: {selected_docs[0]}")
         
         if user_question:
             answer = chat_with_document(doc_content, user_question)
             if answer:
-                st.write(f"Answer: {answer}")
+                st.write(f"Answer for {selected_docs[0]}: {answer}")
