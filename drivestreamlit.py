@@ -32,19 +32,24 @@ def get_document_content(doc_id):
                     content += text_run['textRun']['content']
     return content
 
-# OpenAI Chat with correct API syntax
-def chat_with_document(content, question):
+# OpenAI Chat with enhanced prompt for better accuracy
+def chat_with_document(content, question, context_keywords=None):
+    if context_keywords:
+        prompt = f"The following is the content of a document. Please search for information related to {', '.join(context_keywords)} and answer the question: {question}. If the information is not found, provide a summary of the relevant sections:\n\n{content}"
+    else:
+        prompt = f"Here is the document content: {content}. Now, answer this question: {question}"
+    
     response = openai.chat.completions.create(
-        model="gpt-4o-mini",  # Use GPT-4o-mini model
+        model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": f"Here is the document content: {content}. Now, answer this question: {question}"}
+            {"role": "user", "content": prompt}
         ],
         max_tokens=150
     )
     
     # Extract the message content from the response
-    message_content = response.choices[0].message.content  # Access the 'content' as an object attribute
+    message_content = response.choices[0].message.content
     
     return message_content
 
@@ -59,6 +64,7 @@ selected_docs = st.multiselect("Select one or more documents to query", doc_choi
 if selected_docs:
     # Single text input area for entering the question
     user_question = st.text_input("Ask a question to query across the selected documents")
+    context_keywords = st.text_input("Enter keywords to focus on (optional)", placeholder="e.g., vacation policy, employee benefits")
 
     if user_question:
         for doc_name in selected_docs:
@@ -66,7 +72,7 @@ if selected_docs:
             # Get document content from Google Docs
             doc_content = get_document_content(doc_id)
             
-            # Query each document with the same question
-            answer = chat_with_document(doc_content, user_question)
+            # Query each document with the same question and optional context keywords
+            answer = chat_with_document(doc_content, user_question, context_keywords.split(',') if context_keywords else None)
             if answer:
                 st.write(f"Answer for {doc_name}: {answer}")
