@@ -6,12 +6,13 @@ import openai
 # Set up OpenAI API
 openai.api_key = st.secrets["openai"]["api_key"]  # Access OpenAI API key from Streamlit secrets
 
-# Google Drive API setup
-SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
+# Google Drive and Docs API setup
+SCOPES = ['https://www.googleapis.com/auth/drive.readonly', 'https://www.googleapis.com/auth/documents.readonly']
 credentials = service_account.Credentials.from_service_account_info(
     st.secrets["google"], scopes=SCOPES)  # Access Google credentials from Streamlit secrets
 
 drive_service = build('drive', 'v3', credentials=credentials)
+docs_service = build('docs', 'v1', credentials=credentials)
 
 # Function to get docs from Google Drive
 def get_google_docs_from_folder(folder_id):
@@ -19,6 +20,17 @@ def get_google_docs_from_folder(folder_id):
     results = drive_service.files().list(q=query, fields="files(id, name)").execute()
     items = results.get('files', [])
     return items
+
+# Function to get content from a Google Doc
+def get_document_content(doc_id):
+    document = docs_service.documents().get(documentId=doc_id).execute()
+    content = ""
+    for element in document.get('body').get('content'):
+        if 'paragraph' in element:
+            for text_run in element['paragraph']['elements']:
+                if 'textRun' in text_run:
+                    content += text_run['textRun']['content']
+    return content
 
 # OpenAI Chat with correct API syntax
 def chat_with_document(content, question):
@@ -46,7 +58,7 @@ if folder_id:
     if selected_doc:
         doc_id = next(doc['id'] for doc in docs if doc['name'] == selected_doc)
         # Get document content from Google Docs
-        doc_content = "Extracted document content here"  # Implement Google Docs content extraction
+        doc_content = get_document_content(doc_id)  # Fetch the actual document content
         user_question = st.text_input("Ask a question about the document")
         
         if user_question:
