@@ -38,13 +38,13 @@ def chunk_content(content, max_length=1500):
     wrapped_content = textwrap.wrap(content, max_length)
     return wrapped_content
 
-# OpenAI Chat with concise and focused responses
+# OpenAI Chat with concise and focused responses (only one response per document)
 def chat_with_document(content, question):
     chunks = chunk_content(content)
-    full_answer = ""
 
+    # Loop through the chunks until a response is generated
     for chunk in chunks:
-        prompt = f"Here is a section of the document: {chunk}\n\nAnswer the following question briefly and without repeating similar phrases: {question}"
+        prompt = f"Here is a section of the document: {chunk}\n\nAnswer the following question briefly and concisely: {question}"
         
         response = openai.chat.completions.create(
             model="gpt-4o-mini",
@@ -59,11 +59,12 @@ def chat_with_document(content, question):
         # Extract the message content from the response
         answer = response.choices[0].message.content.strip()
         
-        # Only append if it's not a redundant response
-        if answer and "does not contain" not in full_answer:
-            full_answer += answer + "\n"
-    
-    return full_answer.strip()
+        # Return the first valid answer and stop further processing
+        if answer:
+            return answer
+
+    # If no relevant information is found in any chunk
+    return "The document does not contain information about the vacation policy."
 
 # Streamlit App
 folder_id = st.secrets["google"]["folder_id"]  # Use the folder ID from Streamlit secrets
