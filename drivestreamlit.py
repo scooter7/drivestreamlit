@@ -31,10 +31,10 @@ def chat_with_document(content, question):
         max_tokens=150
     )
     
-    # Debug the response to check its structure
-    st.write(response)  # Output the response to Streamlit to inspect its structure
-
-    return None  # Returning None for now, we will update this once we know the structure
+    # Extract the message content from the response
+    message_content = response['choices'][0]['message']['content']
+    
+    return message_content
 
 # Streamlit App
 folder_id = st.text_input("Enter the Google Drive folder ID")
