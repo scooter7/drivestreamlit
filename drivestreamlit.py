@@ -4,16 +4,14 @@ from google.oauth2 import service_account
 from openai import OpenAI
 
 # Set up OpenAI API
+openai_api_key = st.secrets["openai"]["api_key"]  # Access OpenAI API key from Streamlit secrets
 client = OpenAI()
-openai_api_key = st.secrets["openai"]["api_key"]
-client.api_key = openai_api_key
+client.api_key = openai_api_key  # Assign the OpenAI API key to the client
 
 # Google Drive API setup
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
-SERVICE_ACCOUNT_FILE = 'path_to_google_credentials.json'  # Use Streamlit secrets to store this
-
 credentials = service_account.Credentials.from_service_account_info(
-    st.secrets["google"], scopes=SCOPES)
+    st.secrets["google"], scopes=SCOPES)  # Access Google credentials from Streamlit secrets
 
 drive_service = build('drive', 'v3', credentials=credentials)
 
@@ -24,19 +22,19 @@ def get_google_docs_from_folder(folder_id):
     items = results.get('files', [])
     return items
 
-# OpenAI Chat with the correct new API syntax
+# OpenAI Chat with new API syntax
 def chat_with_document(content, question):
     response = client.chat.completions.create(
-        model="gpt-4o-mini",  # Assuming you are using GPT-4o-mini
+        model="gpt-4o-mini",  # Use GPT-4o-mini model
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": f"Here is the document content: {content}. Now, answer this question: {question}"}
         ],
         max_tokens=150
     )
-
+    
     # Debug the response to check its structure
-    st.write(response)  # Output the entire response to inspect
+    st.write(response)  # Optional: write the response to Streamlit to inspect its structure
 
     # Correct access of response content based on the API response structure
     return response.choices[0].message['content']
