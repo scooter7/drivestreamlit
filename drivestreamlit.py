@@ -2,7 +2,7 @@ import streamlit as st
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import openai
-from langchain.embeddings import OpenAIEmbeddings  # Correct standard import
+from langchain.embeddings.openai import OpenAIEmbeddings  # Corrected import
 from langchain.vectorstores import FAISS
 from langchain.schema import Document
 
@@ -41,7 +41,7 @@ def split_document_into_chunks(content, chunk_size=2000):
 
 # Function to convert text chunks into embeddings and create a vectorstore
 def create_vectorstore_from_chunks(text_chunks):
-    embeddings = OpenAIEmbeddings()
+    embeddings = OpenAIEmbeddings(openai_api_key=openai.api_key)
     docs = [Document(page_content=chunk) for chunk in text_chunks]
     vectorstore = FAISS.from_documents(docs, embeddings)
     return vectorstore
@@ -59,7 +59,7 @@ def chat_with_document(content, question):
         content = content[:5000] + "..."
     
     response = openai.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4",
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": f"Here is the document content: {content}. Now, answer this question: {question}"}
@@ -67,7 +67,7 @@ def chat_with_document(content, question):
         max_tokens=300
     )
     
-    message_content = response.choices[0].message['content']
+    message_content = response.choices[0]['message']['content']
     
     return message_content
 
