@@ -3,6 +3,12 @@ import streamlit as st
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 from openai import OpenAI  # Import OpenAI client
+from datetime import datetime
+import base64
+import httpx
+
+# GitHub URLs for saving chat history
+GITHUB_HISTORY_URL = "https://api.github.com/repos/scooter7/drivestreamlit/contents/chats"
 
 # Set up OpenAI API client
 client = OpenAI(
@@ -44,7 +50,7 @@ def keyword_filter(content, keywords):
     return filtered_sections
 
 # Function to query GPT-3.5-turbo
-def query_gpt(filtered_sections, question):
+def query_gpt(filtered_sections, question, citations):
     # Concatenate the relevant sections to form the context
     context = "\n".join(filtered_sections)
     
@@ -63,7 +69,47 @@ def query_gpt(filtered_sections, question):
     )
 
     # Extract the response content (updated to use attribute access)
-    return response.choices[0].message.content
+    bot_response = response.choices[0].message.content
+
+    # Add citations to the response
+    doc_links = "\n".join([f"- {doc_name} (https://docs.google.com/document/d/{doc_id})" for doc_name, doc_id in citations])
+    bot_response += f"\n\n**Citations**:\n{doc_links}"
+
+    return bot_response
+
+# Function to save chat logs to GitHub
+def save_chat_to_github(user_question, bot_response):
+    github_token = st.secrets["github"]["access_token"]
+    headers = {
+        'Accept': 'application/vnd.github.v3+json',
+        'Authorization': f'token {github_token}'
+    }
+    
+    now = datetime.now()
+    timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
+    file_name = f"chat_history_{timestamp}.txt"
+    
+    # Prepare chat content
+    chat_content = f"Timestamp: {timestamp}\nUser question: {user_question}\nBot response: {bot_response}"
+    
+    # Encode the content for GitHub
+    encoded_content = base64.b64encode(chat_content.encode('utf-8')).decode('utf-8')
+    
+    data = {
+        "message": f"Save chat history on {timestamp}",
+        "content": encoded_content,
+        "branch": "main"
+    }
+    
+    # Save to GitHub
+    try:
+        response = httpx.put(f"{GITHUB_HISTORY_URL}/{file_name}", headers=headers, json=data)
+        response.raise_for_status()
+        st.success("Chat history saved successfully to GitHub.")
+    except httpx.HTTPStatusError as e:
+        st.error(f"HTTP error occurred: {e.response.status_code} - {e.response.text}")
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
 
 # Streamlit App
 folder_id = st.secrets["google"]["folder_id"]  # Retrieve the folder ID from Streamlit secrets
@@ -82,13 +128,19 @@ if selected_docs_names:
         # Use keywords to filter the document
         keywords = user_question.split()  # Simple keyword extraction from the user question
         filtered_sections = []
+        citations = set()  # Track which documents are relevant
         
-        # Filter sections for each selected document
-        for content in doc_contents:
-            filtered_sections.extend(keyword_filter(content, keywords))
+        # Filter sections for each selected document and collect citations
+        for doc, content in zip(selected_docs, doc_contents):
+            sections = keyword_filter(content, keywords)
+            if sections:
+                filtered_sections.extend(sections)
+                citations.add((doc['name'], doc['id']))  # Track document citations
         
         # Query GPT-3.5-turbo with the filtered sections
-        answer = query_gpt(filtered_sections, user_question)
+        answer = query_gpt(filtered_sections, user_question, citations)
         
         if answer:
             st.write(f"**Answer:** {answer}")
+            # Save chat to GitHub
+            save_chat_to_github(user_question, answer)
