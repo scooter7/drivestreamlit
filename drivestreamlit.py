@@ -47,7 +47,7 @@ def chat_with_document(content, question):
         # Direct prompt asking for specific content related to the question
         prompt = f"Based on the following document section, answer the question: '{question}'. If no relevant information is found, simply state 'No relevant information found.' Do not repeat yourself unnecessarily.\n\n{chunk}"
         
-        response = openai.ChatCompletion.create(
+        response = openai.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a concise assistant."},
