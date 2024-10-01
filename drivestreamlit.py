@@ -1,10 +1,13 @@
+import os
 import streamlit as st
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
-import openai
+from openai import OpenAI  # Import OpenAI client
 
-# Set up OpenAI API
-openai.api_key = st.secrets["openai"]["api_key"]  # Access OpenAI API key from Streamlit secrets
+# Set up OpenAI API client
+client = OpenAI(
+    api_key=st.secrets["openai"]["api_key"]  # Access OpenAI API key from Streamlit secrets
+)
 
 # Google Drive and Docs API setup
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly', 'https://www.googleapis.com/auth/documents.readonly']
@@ -49,8 +52,8 @@ def query_gpt(filtered_sections, question):
     if not context:
         return "Sorry, no relevant information was found in the document regarding your query."
     
-    # Query GPT-3.5-turbo with the context and question
-    response = openai.ChatCompletion.create(
+    # Query GPT-3.5-turbo with the context and question using the new client format
+    response = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
