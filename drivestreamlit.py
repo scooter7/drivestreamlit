@@ -2,6 +2,7 @@ import streamlit as st
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import openai
+from langchain.text_splitter import CharacterTextSplitter
 
 openai.api_key = st.secrets["openai"]["api_key"]
 
@@ -28,6 +29,18 @@ def get_document_content(doc_id):
                     content += text_run['textRun']['content']
     return content
 
+# Function to split document into smaller chunks
+def split_document_content(content):
+    splitter = CharacterTextSplitter(separator="\n", chunk_size=1000, chunk_overlap=200)
+    return splitter.split_text(content)
+
+# Function to find the most relevant document chunk to the query
+def find_relevant_chunk(chunks, query):
+    for chunk in chunks:
+        if query.lower() in chunk.lower():
+            return chunk
+    return None
+
 def chat_with_document(content, question):
     if len(content) > 5000:
         content = content[:5000] + "..."
@@ -41,7 +54,7 @@ def chat_with_document(content, question):
         max_tokens=300
     )
     
-    message_content = response.choices[0].message.content  # Correct extraction of content
+    message_content = response.choices[0].message.content
     
     return message_content
 
@@ -62,6 +75,15 @@ if folder_id:
         user_question = st.text_input("Ask a question about the document")
         
         if user_question:
-            answer = chat_with_document(doc_content, user_question)
-            if answer:
-                st.write(f"Answer: {answer}")
+            # Split document into smaller chunks
+            doc_chunks = split_document_content(doc_content)
+            # Find the most relevant chunk to the user's question
+            relevant_chunk = find_relevant_chunk(doc_chunks, user_question)
+            
+            if relevant_chunk:
+                st.write(f"Relevant Section: {relevant_chunk[:500]}...")
+                answer = chat_with_document(relevant_chunk, user_question)
+                if answer:
+                    st.write(f"Answer: {answer}")
+            else:
+                st.write("The document does not contain any relevant information about the question.")
