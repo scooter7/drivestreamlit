@@ -34,7 +34,7 @@ def get_document_content(doc_id):
 
 # OpenAI Chat with improved prompt
 def chat_with_document(content, question):
-    response = openai.ChatCompletion.create(
+    response = openai.chat.completions.create(
         model="gpt-4o-mini",  # Use GPT-4o-mini model
         messages=[
             {"role": "system", "content": "You are a helpful assistant that provides clear and concise answers."},
