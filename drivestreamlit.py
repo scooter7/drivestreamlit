@@ -61,9 +61,9 @@ def query_gpt(filtered_sections, question):
         ],
         max_tokens=500  # Adjust based on the desired length of the response
     )
-    
-    # Extract the response content
-    return response['choices'][0]['message']['content']
+
+    # Extract the response content (updated to use attribute access)
+    return response.choices[0].message.content
 
 # Streamlit App
 folder_id = st.text_input("Enter the Google Drive folder ID")
