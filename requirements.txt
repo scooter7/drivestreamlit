@@ -4,6 +4,6 @@ google-auth
 google-auth-oauthlib
 google-auth-httplib2
 openai
+langchain
 PyYAML
-PyPDF2
-requests
+tiktoken
