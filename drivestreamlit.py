@@ -2,7 +2,7 @@ import streamlit as st
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import openai
-from langchain.embeddings import OpenAIEmbeddings
+from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
 from langchain.schema import Document
 
@@ -36,7 +36,7 @@ def get_document_content(doc_id):
     return content
 
 # Function to split document into chunks
-def split_document_into_chunks(content, chunk_size=1000):
+def split_document_into_chunks(content, chunk_size=2000):
     return [content[i:i + chunk_size] for i in range(0, len(content), chunk_size)]
 
 # Function to convert text chunks into embeddings and create a vectorstore
@@ -53,8 +53,11 @@ def find_relevant_chunk(vectorstore, query):
         return docs[0].page_content
     return None
 
-# Function to chat with the document
+# Function to chat with the document using the correct syntax `openai.chat.completions.create`
 def chat_with_document(content, question):
+    if len(content) > 5000:
+        content = content[:5000] + "..."
+    
     response = openai.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
@@ -64,8 +67,8 @@ def chat_with_document(content, question):
         max_tokens=300
     )
     
-    # Extracting the response
-    message_content = response.choices[0].message['content']
+    message_content = response.choices[0]['message']['content']
+    
     return message_content
 
 # Streamlit app
@@ -81,7 +84,6 @@ if folder_id:
         doc_id = next(doc['id'] for doc in docs if doc['name'] == selected_doc)
         doc_content = get_document_content(doc_id)
         
-        # Display first 2000 characters for reference
         st.write(f"Document Content (first 2000 characters): {doc_content[:2000]}...")
         
         # Split the document into chunks
