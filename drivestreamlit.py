@@ -31,7 +31,6 @@ def get_document_content(doc_id):
 def split_document_into_chunks(content, chunk_size=2000):
     return [content[i:i + chunk_size] for i in range(0, len(content), chunk_size)]
 
-# Enhanced function to search for keywords in multiple chunks
 def find_relevant_section(chunks, query_terms):
     query_terms = query_terms.lower().split()
     for chunk in chunks:
