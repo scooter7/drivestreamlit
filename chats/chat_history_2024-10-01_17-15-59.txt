@@ -1,0 +1,6 @@
+Timestamp: 2024-10-01_17-15-59
+User question: what do we use for email?
+Bot response: For email communication, the standard logo should also be used as the primary logo. This ensures consistency in branding across various forms of communication, including email correspondence.
+
+**Citations**:
+- HR and Ops (https://docs.google.com/document/d/1ixOvDqvRwOG4jG5XG3Sot3scNZCAtSpM7pAg1YyLx88)
