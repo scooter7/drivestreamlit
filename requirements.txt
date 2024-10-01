@@ -13,3 +13,4 @@ langchain
 faiss-cpu
 PyJWT
 langchain-community
+tiktoken
