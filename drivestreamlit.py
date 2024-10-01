@@ -49,16 +49,27 @@ def keyword_filter(content, keywords):
             filtered_sections.append(paragraph)
     return filtered_sections
 
+# Function to truncate content to stay within token limits
+def truncate_content(filtered_sections, max_tokens=1600):
+    # GPT-3.5-turbo supports ~4096 tokens, with input and response tokens included. 
+    # To stay safe, we limit content to 1600 tokens (approx. ~8000 characters)
+    truncated_content = ""
+    for section in filtered_sections:
+        if len(truncated_content) + len(section) > max_tokens:
+            break
+        truncated_content += section + "\n"
+    return truncated_content
+
 # Function to query GPT-3.5-turbo
 def query_gpt(filtered_sections, question, citations):
-    # Concatenate the relevant sections to form the context
-    context = "\n".join(filtered_sections)
+    # Truncate content to ensure it fits within the token limit
+    context = truncate_content(filtered_sections, max_tokens=1600)
     
     # If no relevant sections were found, return early
     if not context:
         return "Sorry, no relevant information was found in the document regarding your query."
     
-    # Query GPT-3.5-turbo with the context and question using the new client format
+    # Query GPT-3.5-turbo with the context and question
     response = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[
@@ -68,7 +79,7 @@ def query_gpt(filtered_sections, question, citations):
         max_tokens=500  # Adjust based on the desired length of the response
     )
 
-    # Extract the response content (updated to use attribute access)
+    # Extract the response content
     bot_response = response.choices[0].message.content
 
     # Add citations to the response
