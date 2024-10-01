@@ -4,13 +4,13 @@ from googleapiclient.discovery import build
 from google.oauth2 import service_account
 from PyPDF2 import PdfReader
 import openai
-from langchain.text_splitter import CharacterTextSplitter
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.vectorstores import FAISS
-from langchain.chat_models import ChatOpenAI
-from langchain.memory import ConversationBufferMemory
-from langchain.chains import ConversationalRetrievalChain
-from langchain.schema import Document
+from langchain_community.text_splitter import CharacterTextSplitter
+from langchain_community.embeddings import OpenAIEmbeddings
+from langchain_community.vectorstores import FAISS
+from langchain_community.chat_models import ChatOpenAI
+from langchain_community.memory import ConversationBufferMemory
+from langchain_community.chains import ConversationalRetrievalChain
+from langchain_community.schema import Document
 
 # Set up OpenAI API
 openai.api_key = st.secrets["openai"]["api_key"]
@@ -64,7 +64,8 @@ def get_text_chunks(text, metadata):
 def get_vectorstore(text_chunks, chunk_metadata):
     if not text_chunks:
         raise ValueError("No text chunks available for embedding.")
-    embeddings = OpenAIEmbeddings()
+    # Ensure OpenAI API Key is passed correctly
+    embeddings = OpenAIEmbeddings(openai_api_key=openai.api_key)
     documents = [Document(page_content=chunk, metadata=chunk_metadata[i]) for i, chunk in enumerate(text_chunks)]
     vectorstore = FAISS.from_documents(documents, embedding=embeddings)
     return vectorstore
