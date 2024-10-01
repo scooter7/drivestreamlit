@@ -49,22 +49,28 @@ def get_pdf_text(pdf_docs, pdf_names):
     return text, metadata
 
 # Function to chunk text content
-def get_text_chunks(text, metadata):
-    text_splitter = CharacterTextSplitter(separator="\n", chunk_size=1000, chunk_overlap=200, length_function=len)
+def get_text_chunks(texts, metadata):
+    text_splitter = CharacterTextSplitter(separator="\n", chunk_size=1000, chunk_overlap=200)
     chunks = []
     chunk_metadata = []
-    for i, page_text in enumerate(text):
+    for i, page_text in enumerate(texts):
         page_chunks = text_splitter.split_text(page_text)
         chunks.extend(page_chunks)
-        chunk_metadata.extend([metadata[i]] * len(page_chunks))  # Assign correct metadata to each chunk
+        chunk_metadata.extend([metadata[i]] * len(page_chunks))  # Attach metadata to each chunk
     return chunks, chunk_metadata
 
 # Function to create a vectorstore
 def get_vectorstore(text_chunks, chunk_metadata):
     if not text_chunks:
         raise ValueError("No text chunks available for embedding.")
+    
     embeddings = OpenAIEmbeddings(openai_api_key=openai.api_key)
     documents = [Document(page_content=chunk, metadata=chunk_metadata[i]) for i, chunk in enumerate(text_chunks)]
+    
+    # Debug: Log embedded document information
+    for i, doc in enumerate(documents):
+        st.write(f"Embedding document chunk {i}: {doc.metadata['source']}")
+    
     vectorstore = FAISS.from_documents(documents, embedding=embeddings)
     return vectorstore
 
@@ -85,8 +91,15 @@ def handle_userinput(user_question):
     if 'conversation' in st.session_state and st.session_state.conversation:
         response = st.session_state.conversation({'question': user_question})
         st.session_state.chat_history = response['chat_history']
+        
+        # Extract answer and sources
         answer = response['answer']
         source_documents = response.get('source_documents', [])
+        
+        # Log retrieved documents for debugging
+        for doc in source_documents:
+            st.write(f"Retrieved document: {doc.metadata['source']}")
+        
         citations = [doc.metadata['source'] for doc in source_documents if doc.metadata]
         modified_answer = modify_response_language(answer, citations)
         st.write(modified_answer)
@@ -94,7 +107,7 @@ def handle_userinput(user_question):
 # Function to modify response language and add citations
 def modify_response_language(original_response, citations=None):
     response = original_response.replace(" they ", " we ").replace(" their ", " our ")
-
+    
     if citations:
         # Remove duplicate citations
         unique_citations = list(dict.fromkeys(citations))  # This ensures only unique citations are added
