@@ -40,7 +40,7 @@ def keyword_filter(content, keywords):
             filtered_sections.append(paragraph)
     return filtered_sections
 
-# Function to query GPT-3.5-turbo
+# Function to query GPT-3.5-turbo (new format for openai>=1.0.0)
 def query_gpt(filtered_sections, question):
     # Concatenate the relevant sections to form the context
     context = "\n".join(filtered_sections)
@@ -50,7 +50,7 @@ def query_gpt(filtered_sections, question):
         return "Sorry, no relevant information was found in the document regarding your query."
     
     # Query GPT-3.5-turbo with the context and question
-    response = openai.ChatCompletion.create(
+    response = openai.chat_completions.create(
         model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
