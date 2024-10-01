@@ -6,7 +6,7 @@ import openai
 # Import necessary LangChain modules
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
-from langchain.text_splitter import CharacterTextSplitter
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.chains import RetrievalQA
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import Document
@@ -43,7 +43,7 @@ def get_document_content(doc_id):
 # Function to chat with the document using LangChain
 def chat_with_document_langchain(content, question):
     # Split the content into manageable chunks
-    text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=200)
     texts = text_splitter.split_text(content)
     
     # Create Document objects for each chunk
@@ -64,10 +64,16 @@ def chat_with_document_langchain(content, question):
     # Create a RetrievalQA chain
     qa_chain = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=retriever)
     
-    # Run the QA chain to get the answer
-    answer = qa_chain.run(question)
+    # Process chunks and get answers for each
+    answers = []
+    for text_chunk in texts:
+        try:
+            answer = qa_chain.run(question)
+            answers.append(answer)
+        except Exception as e:
+            st.write(f"Error while processing chunk: {e}")
     
-    return answer
+    return "\n".join(answers)
 
 # Streamlit App
 folder_id = st.text_input("Enter the Google Drive folder ID")
