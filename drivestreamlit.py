@@ -2,7 +2,8 @@ import os
 import streamlit as st
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
-from openai import OpenAI  # Import OpenAI client
+from openai import OpenAI
+from datetime import datetime
 
 # Set up OpenAI API client
 client = OpenAI(
@@ -43,8 +44,19 @@ def keyword_filter(content, keywords):
             filtered_sections.append(paragraph)
     return filtered_sections
 
+# Function to save chat logs to GitHub folder
+def save_chat_to_file(user_question, bot_response):
+    now = datetime.now()
+    timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
+    file_name = f"chats/{timestamp}_chat.txt"
+    
+    with open(file_name, "w") as file:
+        file.write(f"Timestamp: {now}\n")
+        file.write(f"User question: {user_question}\n")
+        file.write(f"Bot response: {bot_response}\n")
+
 # Function to query GPT-3.5-turbo
-def query_gpt(filtered_sections, question):
+def query_gpt(filtered_sections, question, selected_docs):
     # Concatenate the relevant sections to form the context
     context = "\n".join(filtered_sections)
     
@@ -63,29 +75,40 @@ def query_gpt(filtered_sections, question):
     )
 
     # Extract the response content (updated to use attribute access)
-    return response.choices[0].message.content
+    bot_response = response.choices[0].message.content
+
+    # Add citations to the response
+    doc_links = "\n".join([f"- {doc['name']} (https://docs.google.com/document/d/{doc['id']})" for doc in selected_docs])
+    bot_response += f"\n\n**Citations**:\n{doc_links}"
+
+    return bot_response
 
 # Streamlit App
-folder_id = st.text_input("Enter the Google Drive folder ID")
-if folder_id:
-    docs = get_google_docs_from_folder(folder_id)
-    doc_choices = [doc['name'] for doc in docs]
-    selected_doc = st.selectbox("Select a document to query", doc_choices)
+folder_id = st.secrets["folder_id"]  # Retrieve the folder ID from Streamlit secrets
+docs = get_google_docs_from_folder(folder_id)
+doc_choices = [doc['name'] for doc in docs]
+selected_docs_names = st.multiselect("Select documents to query", doc_choices)
 
-    if selected_doc:
-        doc_id = next(doc['id'] for doc in docs if doc['name'] == selected_doc)
-        # Get document content from Google Docs
-        doc_content = get_document_content(doc_id)
+if selected_docs_names:
+    selected_docs = [doc for doc in docs if doc['name'] in selected_docs_names]
+    doc_contents = [get_document_content(doc['id']) for doc in selected_docs]
+    
+    # Ask the user for the query
+    user_question = st.text_input("Ask a question about the document(s)")
+    
+    if user_question:
+        # Use keywords to filter the document
+        keywords = user_question.split()  # Simple keyword extraction from the user question
+        filtered_sections = []
         
-        # Ask the user for the query
-        user_question = st.text_input("Ask a question about the document")
+        # Filter sections for each selected document
+        for content in doc_contents:
+            filtered_sections += keyword_filter(content, keywords)
         
-        if user_question:
-            # Use keywords to filter the document
-            keywords = user_question.split()  # Simple keyword extraction from the user question
-            filtered_sections = keyword_filter(doc_content, keywords)
-            
-            # Query GPT-3.5-turbo with the filtered sections
-            answer = query_gpt(filtered_sections, user_question)
-            if answer:
-                st.write(f"**Answer:** {answer}")
+        # Query GPT-3.5-turbo with the filtered sections
+        answer = query_gpt(filtered_sections, user_question, selected_docs)
+        
+        if answer:
+            st.write(f"**Answer:** {answer}")
+            # Save chat to file
+            save_chat_to_file(user_question, answer)
