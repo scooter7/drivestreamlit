@@ -39,37 +39,33 @@ def chunk_content(content, max_length=1500):
     wrapped_content = textwrap.wrap(content, max_length)
     return wrapped_content
 
-# OpenAI Chat with enhanced prompt and better response handling
+# OpenAI Chat with enhanced logic to prevent redundant responses
 def chat_with_document(content, question):
     chunks = chunk_content(content)
-    full_answer = ""
 
     for chunk in chunks:
-        # The prompt now asks the model to specifically focus on vacation policy and return only related information
-        prompt = f"The following is a section of a document. Based on this section, provide information regarding the vacation policy, if present. If no relevant information is found in this section, mention that the section does not include vacation policy information.\n\n{chunk}"
-
-        response = openai.chat.completions.create(
+        # Direct prompt asking for specific content related to the question
+        prompt = f"Based on the following document section, answer the question: '{question}'. If no relevant information is found, simply state 'No relevant information found.' Do not repeat yourself unnecessarily.\n\n{chunk}"
+        
+        response = openai.ChatCompletion.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "system", "content": "You are a concise assistant."},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=100,  # Allow enough tokens for detailed responses
-            temperature=0.2  # Low temperature to reduce verbosity
+            max_tokens=100,  # Enough tokens for concise answers
+            temperature=0.2  # Lower temperature for deterministic answers
         )
 
         # Extract the message content from the response
-        answer = response.choices[0].message.content.strip()
+        answer = response.choices[0].message['content'].strip()
 
-        # Check if the answer provides relevant information about the vacation policy
-        if "vacation policy" in answer.lower():
-            full_answer += answer + "\n"
+        # Stop processing if we get a valid non-redundant answer
+        if answer and answer != "No relevant information found.":
+            return answer
 
-    # If no relevant vacation policy information is found
-    if not full_answer:
-        return "The document does not contain any information regarding the vacation policy."
-    
-    return full_answer.strip()
+    # If no relevant information is found across all chunks
+    return "No relevant information found."
 
 # Streamlit App
 folder_id = st.secrets["google"]["folder_id"]  # Use the folder ID from Streamlit secrets
@@ -88,9 +84,6 @@ if selected_docs:
             doc_id = next(doc['id'] for doc in docs if doc['name'] == doc_name)
             # Get document content from Google Docs
             doc_content = get_document_content(doc_id)
-            
-            # Log document content for debugging (Optional)
-            st.write(f"Content of {doc_name}: {doc_content[:1000]}...")  # Show first 1000 characters of content for debugging
             
             # Query each document with the same question
             answer = chat_with_document(doc_content, user_question)
