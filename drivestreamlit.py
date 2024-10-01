@@ -49,27 +49,42 @@ def keyword_filter(content, keywords):
             filtered_sections.append(paragraph)
     return filtered_sections
 
-# Function to query GPT-3.5-turbo
-def query_gpt(filtered_sections, question):
-    # Concatenate the relevant sections to form the context
-    context = "\n".join(filtered_sections)
+# Function to split the content into chunks to avoid exceeding token limit
+def split_into_chunks(text, max_chunk_length=3000):
+    words = text.split()
+    chunks = []
+    current_chunk = []
     
-    # If no relevant sections were found, return early
-    if not context:
-        return "Sorry, no relevant information was found in the document regarding your query."
+    for word in words:
+        current_chunk.append(word)
+        if len(" ".join(current_chunk)) > max_chunk_length:
+            chunks.append(" ".join(current_chunk))
+            current_chunk = []
     
-    # Query GPT-3.5-turbo with the context and question
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": f"Context: {context}\n\nAnswer the following question: {question}"}
-        ],
-        max_tokens=500  # Adjust based on the desired length of the response
-    )
+    if current_chunk:
+        chunks.append(" ".join(current_chunk))
+    
+    return chunks
 
-    # Extract the response content
-    return response.choices[0].message.content
+# Function to query GPT-3.5-turbo with each chunk
+def query_gpt(chunks, question):
+    combined_answer = ""
+
+    for chunk in chunks:
+        # Query GPT-3.5-turbo with the chunk and question
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": f"Context: {chunk}\n\nAnswer the following question: {question}"}
+            ],
+            max_tokens=500  # Adjust based on the desired length of the response
+        )
+
+        # Extract the response content
+        combined_answer += response.choices[0].message.content + "\n"
+
+    return combined_answer
 
 # Function to save chat logs to GitHub
 def save_chat_to_github(user_question, bot_response):
@@ -127,8 +142,14 @@ if selected_docs_names:
         for content in doc_contents:
             filtered_sections.extend(keyword_filter(content, keywords))
         
-        # Query GPT-3.5-turbo with the filtered sections
-        answer = query_gpt(filtered_sections, user_question)
+        # Combine all filtered sections into one text
+        combined_content = "\n".join(filtered_sections)
+        
+        # Split the combined content into chunks
+        content_chunks = split_into_chunks(combined_content)
+
+        # Query GPT-3.5-turbo with the chunks
+        answer = query_gpt(content_chunks, user_question)
         
         if answer:
             st.write(f"**Answer:** {answer}")
