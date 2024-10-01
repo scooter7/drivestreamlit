@@ -3,6 +3,14 @@ from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import openai
 
+# Import necessary LangChain modules
+from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.vectorstores import FAISS
+from langchain.text_splitter import CharacterTextSplitter
+from langchain.chains import RetrievalQA
+from langchain.chat_models import ChatOpenAI
+from langchain.schema import Document
+
 # Set up OpenAI API
 openai.api_key = st.secrets["openai"]["api_key"]  # Access OpenAI API key from Streamlit secrets
 
@@ -25,32 +33,43 @@ def get_google_docs_from_folder(folder_id):
 def get_document_content(doc_id):
     document = docs_service.documents().get(documentId=doc_id).execute()
     content = ""
-    for element in document.get('body').get('content', []):
+    for element in document.get('body').get('content'):
         if 'paragraph' in element:
             for text_run in element['paragraph']['elements']:
                 if 'textRun' in text_run:
                     content += text_run['textRun']['content']
     return content
 
-# OpenAI Chat with correct API syntax
-def chat_with_document(content, question):
-    response = openai.chat.completions.create(
-        model="gpt-4o-mini",  # Use GPT-4o-mini model
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": f"Here is the document content: {content}. Now, answer this question: {question}"}
-        ],
-        max_tokens=150
-    )
+# Function to chat with the document using LangChain
+def chat_with_document_langchain(content, question):
+    # Split the content into manageable chunks
+    text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+    texts = text_splitter.split_text(content)
     
-    # Extract the message content from the response
-    message_content = response.choices[0].message['content']  # Correct access method
+    # Create Document objects for each chunk
+    documents = [Document(page_content=text) for text in texts]
     
-    return message_content
+    # Initialize OpenAI embeddings
+    embeddings = OpenAIEmbeddings(openai_api_key=openai.api_key)
+    
+    # Create a vector store from the documents and embeddings
+    vectorstore = FAISS.from_documents(documents, embeddings)
+    
+    # Create a retriever from the vector store
+    retriever = vectorstore.as_retriever()
+    
+    # Initialize the ChatOpenAI model
+    llm = ChatOpenAI(openai_api_key=openai.api_key, model_name="gpt-4")
+    
+    # Create a RetrievalQA chain
+    qa_chain = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=retriever)
+    
+    # Run the QA chain to get the answer
+    answer = qa_chain.run(question)
+    
+    return answer
 
 # Streamlit App
-st.title("Query Google Docs Using OpenAI")
-
 folder_id = st.text_input("Enter the Google Drive folder ID")
 if folder_id:
     docs = get_google_docs_from_folder(folder_id)
@@ -64,6 +83,6 @@ if folder_id:
         user_question = st.text_input("Ask a question about the document")
         
         if user_question:
-            answer = chat_with_document(doc_content, user_question)
+            answer = chat_with_document_langchain(doc_content, user_question)
             if answer:
-                st.write(f"Answer: {answer}")
+                st.write(f"**Answer:** {answer}")
