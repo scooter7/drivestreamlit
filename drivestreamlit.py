@@ -50,7 +50,7 @@ def chat_with_document(content, question):
     if len(content) > 5000:
         content = content[:5000] + "..."
     
-    response = openai.ChatCompletion.create(
+    response = openai.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
