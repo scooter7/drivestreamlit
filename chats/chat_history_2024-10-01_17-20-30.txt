@@ -1,0 +1,6 @@
+Timestamp: 2024-10-01_17-20-30
+User question: what about digital marketing channels?
+Bot response: Digital marketing channels play a crucial role in the work of Enrollment Strategists. Understanding various digital platforms and techniques is essential for effectively reaching and engaging prospective students. Examples of digital marketing channels that Enrollment Strategists may utilize include social media, email marketing, search engine optimization (SEO), pay-per-click (PPC) advertising, content marketing, and website optimization. By leveraging these channels strategically, Enrollment Strategists can improve their client's visibility, promote their offerings, and attract the right students to meet enrollment goals.
+
+**Citations**:
+- Enrollment Strategy (https://docs.google.com/document/d/1Bh0SwzfkO4ENjLy7a0fVzUUDpLQpsHqtwDE99eo8nok)
