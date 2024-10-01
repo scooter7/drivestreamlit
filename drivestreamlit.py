@@ -3,14 +3,6 @@ from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import openai
 
-# Import necessary LangChain modules
-from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.vectorstores import FAISS
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.chains import RetrievalQA
-from langchain.chat_models import ChatOpenAI
-from langchain.schema import Document
-
 # Set up OpenAI API
 openai.api_key = st.secrets["openai"]["api_key"]  # Access OpenAI API key from Streamlit secrets
 
@@ -40,49 +32,35 @@ def get_document_content(doc_id):
                     content += text_run['textRun']['content']
     return content
 
-# Function to chat with the document using LangChain
-def chat_with_document_langchain(content, question):
-    # Split the content into manageable chunks
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=200)
-    texts = text_splitter.split_text(content)
+# Function to filter document content based on keywords
+def keyword_filter(content, keywords):
+    filtered_sections = []
+    for paragraph in content.split("\n"):
+        if any(keyword.lower() in paragraph.lower() for keyword in keywords):
+            filtered_sections.append(paragraph)
+    return filtered_sections
+
+# Function to query GPT-3.5-turbo
+def query_gpt(filtered_sections, question):
+    # Concatenate the relevant sections to form the context
+    context = "\n".join(filtered_sections)
     
-    # Create Document objects for each chunk
-    documents = [Document(page_content=text) for text in texts]
+    # If no relevant sections were found, return early
+    if not context:
+        return "Sorry, no relevant information was found in the document regarding your query."
     
-    # Initialize OpenAI embeddings
-    embeddings = OpenAIEmbeddings(openai_api_key=openai.api_key)
+    # Query GPT-3.5-turbo with the context and question
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": f"Context: {context}\n\nAnswer the following question: {question}"}
+        ],
+        max_tokens=500  # Adjust based on the desired length of the response
+    )
     
-    # Create a vector store from the documents and embeddings
-    vectorstore = FAISS.from_documents(documents, embeddings)
-    
-    # Create a retriever from the vector store
-    retriever = vectorstore.as_retriever()
-    
-    # Initialize the ChatOpenAI model
-    llm = ChatOpenAI(openai_api_key=openai.api_key, model_name="gpt-4")
-    
-    # Create a RetrievalQA chain
-    qa_chain = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=retriever)
-    
-    # Track if we find any relevant answers
-    final_answer = ""
-    
-    # Process chunks and get answers for each
-    for text_chunk in texts:
-        try:
-            answer = qa_chain.run(question)
-            if "I'm sorry" not in answer:
-                final_answer += answer + "\n"
-                # Break the loop if an answer is found
-                break
-        except Exception as e:
-            st.write(f"Error while processing chunk: {e}")
-    
-    # If no answer found, return a single message
-    if final_answer == "":
-        final_answer = "Sorry, no relevant information was found in the document regarding your query."
-    
-    return final_answer
+    # Extract the response content
+    return response['choices'][0]['message']['content']
 
 # Streamlit App
 folder_id = st.text_input("Enter the Google Drive folder ID")
@@ -94,10 +72,17 @@ if folder_id:
     if selected_doc:
         doc_id = next(doc['id'] for doc in docs if doc['name'] == selected_doc)
         # Get document content from Google Docs
-        doc_content = get_document_content(doc_id)  # Fetch the actual document content
+        doc_content = get_document_content(doc_id)
+        
+        # Ask the user for the query
         user_question = st.text_input("Ask a question about the document")
         
         if user_question:
-            answer = chat_with_document_langchain(doc_content, user_question)
+            # Use keywords to filter the document
+            keywords = user_question.split()  # Simple keyword extraction from the user question
+            filtered_sections = keyword_filter(doc_content, keywords)
+            
+            # Query GPT-3.5-turbo with the filtered sections
+            answer = query_gpt(filtered_sections, user_question)
             if answer:
                 st.write(f"**Answer:** {answer}")
