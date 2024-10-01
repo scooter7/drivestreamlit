@@ -84,7 +84,7 @@ def query_gpt(filtered_sections, question, selected_docs):
     return bot_response
 
 # Streamlit App
-folder_id = st.secrets["folder_id"]  # Retrieve the folder ID from Streamlit secrets
+folder_id = st.secrets["google"]["folder_id"]  # Retrieve the folder ID from the "google" section of Streamlit secrets
 docs = get_google_docs_from_folder(folder_id)
 doc_choices = [doc['name'] for doc in docs]
 selected_docs_names = st.multiselect("Select documents to query", doc_choices)
