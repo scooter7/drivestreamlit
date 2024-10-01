@@ -4,6 +4,11 @@ from googleapiclient.discovery import build
 from google.oauth2 import service_account
 from openai import OpenAI
 from datetime import datetime
+import base64
+import httpx
+
+# GitHub URLs for saving chat history
+GITHUB_HISTORY_URL = "https://api.github.com/repos/scooter7/drivestreamlit/contents/chats"
 
 # Set up OpenAI API client
 client = OpenAI(
@@ -36,27 +41,52 @@ def get_document_content(doc_id):
                     content += text_run['textRun']['content']
     return content
 
-# Function to filter document content based on keywords
-def keyword_filter(content, keywords):
+# Function to filter document content based on keywords and return relevant sections and doc IDs
+def keyword_filter(content, keywords, doc_name, doc_id):
     filtered_sections = []
+    citations = set()  # To track which documents provide relevant content
     for paragraph in content.split("\n"):
         if any(keyword.lower() in paragraph.lower() for keyword in keywords):
             filtered_sections.append(paragraph)
-    return filtered_sections
+            citations.add((doc_name, doc_id))  # Track which document this came from
+    return filtered_sections, citations
 
-# Function to save chat logs to GitHub folder
-def save_chat_to_file(user_question, bot_response):
+# Function to save chat logs to GitHub
+def save_chat_to_github(user_question, bot_response):
+    github_token = st.secrets["github"]["access_token"]
+    headers = {
+        'Accept': 'application/vnd.github.v3+json',
+        'Authorization': f'token {github_token}'
+    }
+    
     now = datetime.now()
     timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
-    file_name = f"chats/{timestamp}_chat.txt"
+    file_name = f"chat_history_{timestamp}.txt"
     
-    with open(file_name, "w") as file:
-        file.write(f"Timestamp: {now}\n")
-        file.write(f"User question: {user_question}\n")
-        file.write(f"Bot response: {bot_response}\n")
+    # Prepare chat content
+    chat_content = f"Timestamp: {timestamp}\nUser question: {user_question}\nBot response: {bot_response}"
+    
+    # Encode the content for GitHub
+    encoded_content = base64.b64encode(chat_content.encode('utf-8')).decode('utf-8')
+    
+    data = {
+        "message": f"Save chat history on {timestamp}",
+        "content": encoded_content,
+        "branch": "main"
+    }
+    
+    # Save to GitHub
+    try:
+        response = httpx.put(f"{GITHUB_HISTORY_URL}/{file_name}", headers=headers, json=data)
+        response.raise_for_status()
+        st.success("Chat history saved successfully to GitHub.")
+    except httpx.HTTPStatusError as e:
+        st.error(f"HTTP error occurred: {e.response.status_code} - {e.response.text}")
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
 
-# Function to query GPT-3.5-turbo
-def query_gpt(filtered_sections, question, selected_docs):
+# Function to query GPT-3.5-turbo and return the response and citations
+def query_gpt(filtered_sections, question, citations):
     # Concatenate the relevant sections to form the context
     context = "\n".join(filtered_sections)
     
@@ -78,7 +108,7 @@ def query_gpt(filtered_sections, question, selected_docs):
     bot_response = response.choices[0].message.content
 
     # Add citations to the response
-    doc_links = "\n".join([f"- {doc['name']} (https://docs.google.com/document/d/{doc['id']})" for doc in selected_docs])
+    doc_links = "\n".join([f"- {doc_name} (https://docs.google.com/document/d/{doc_id})" for doc_name, doc_id in citations])
     bot_response += f"\n\n**Citations**:\n{doc_links}"
 
     return bot_response
@@ -100,15 +130,18 @@ if selected_docs_names:
         # Use keywords to filter the document
         keywords = user_question.split()  # Simple keyword extraction from the user question
         filtered_sections = []
+        citations = set()  # Track which documents are relevant
         
-        # Filter sections for each selected document
-        for content in doc_contents:
-            filtered_sections += keyword_filter(content, keywords)
+        # Filter sections for each selected document and collect citations
+        for doc, content in zip(selected_docs, doc_contents):
+            sections, doc_citations = keyword_filter(content, keywords, doc['name'], doc['id'])
+            filtered_sections.extend(sections)
+            citations.update(doc_citations)  # Collect only the docs that provide relevant content
         
         # Query GPT-3.5-turbo with the filtered sections
-        answer = query_gpt(filtered_sections, user_question, selected_docs)
+        answer = query_gpt(filtered_sections, user_question, citations)
         
         if answer:
             st.write(f"**Answer:** {answer}")
-            # Save chat to file
-            save_chat_to_file(user_question, answer)
+            # Save chat to GitHub
+            save_chat_to_github(user_question, answer)
