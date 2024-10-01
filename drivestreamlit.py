@@ -3,10 +3,8 @@ from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import openai
 
-# Set up OpenAI API
 openai.api_key = st.secrets["openai"]["api_key"]
 
-# Google Drive and Docs API setup
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly', 'https://www.googleapis.com/auth/documents.readonly']
 credentials = service_account.Credentials.from_service_account_info(
     st.secrets["google"], scopes=SCOPES)
@@ -14,14 +12,12 @@ credentials = service_account.Credentials.from_service_account_info(
 drive_service = build('drive', 'v3', credentials=credentials)
 docs_service = build('docs', 'v1', credentials=credentials)
 
-# Function to get docs from Google Drive
 def get_google_docs_from_folder(folder_id):
     query = f"'{folder_id}' in parents and mimeType='application/vnd.google-apps.document'"
     results = drive_service.files().list(q=query, fields="files(id, name)").execute()
     items = results.get('files', [])
     return items
 
-# Function to get content from a Google Doc
 def get_document_content(doc_id):
     document = docs_service.documents().get(documentId=doc_id).execute()
     content = ""
@@ -32,22 +28,23 @@ def get_document_content(doc_id):
                     content += text_run['textRun']['content']
     return content
 
-# Keyword-based search within the document
-def find_relevant_section(content, keyword):
-    keyword = keyword.lower()
-    content_lower = content.lower()
-    if keyword in content_lower:
-        start_index = content_lower.find(keyword)
-        # Grab a portion of text around the keyword for better context
-        return content[max(0, start_index-500):min(len(content), start_index+500)]
+def split_document_into_chunks(content, chunk_size=2000):
+    return [content[i:i + chunk_size] for i in range(0, len(content), chunk_size)]
+
+# Enhanced function to search for keywords in multiple chunks
+def find_relevant_section(chunks, query_terms):
+    query_terms = query_terms.lower().split()
+    for chunk in chunks:
+        chunk_lower = chunk.lower()
+        if any(term in chunk_lower for term in query_terms):
+            return chunk
     return None
 
-# OpenAI Chat function with content optimization
 def chat_with_document(content, question):
     if len(content) > 5000:
         content = content[:5000] + "..."
     
-    response = openai.chat.completions.create(
+    response = openai.ChatCompletion.create(
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
@@ -60,7 +57,6 @@ def chat_with_document(content, question):
     
     return message_content
 
-# Streamlit App
 st.title("Query Google Docs and Get Answers")
 
 folder_id = st.text_input("Enter the Google Drive folder ID")
@@ -78,8 +74,8 @@ if folder_id:
         user_question = st.text_input("Ask a question about the document")
         
         if user_question:
-            keyword = user_question.split()[-1]  # Assuming the keyword is the last word of the question
-            relevant_section = find_relevant_section(doc_content, keyword)
+            chunks = split_document_into_chunks(doc_content)
+            relevant_section = find_relevant_section(chunks, user_question)
             
             if relevant_section:
                 st.write(f"Relevant Section: {relevant_section[:500]}...")
