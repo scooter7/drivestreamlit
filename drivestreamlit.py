@@ -118,13 +118,13 @@ def main():
     selected_docs = st.multiselect("Select one or more documents to query", doc_choices)
 
     if selected_docs:
-    pdf_docs = [BytesIO(drive_service.files().get_media(fileId=doc['id']).execute()) for doc in docs if doc['name'] in selected_docs]
-    pdf_names = [doc['name'] for doc in docs if doc['name'] in selected_docs]
-    raw_text, source_metadata = get_pdf_text(pdf_docs, pdf_names)
-    text_chunks, chunk_metadata = get_text_chunks(raw_text, source_metadata)
-    if text_chunks:
-        vectorstore = get_vectorstore(text_chunks, chunk_metadata)
-        st.session_state.conversation = get_conversation_chain(vectorstore)
+        pdf_docs = [BytesIO(drive_service.files().get_media(fileId=doc['id']).execute()) for doc in docs if doc['name'] in selected_docs]
+        pdf_names = [doc['name'] for doc in docs if doc['name'] in selected_docs]
+        raw_text, source_metadata = get_pdf_text(pdf_docs, pdf_names)
+        text_chunks, chunk_metadata = get_text_chunks(raw_text, source_metadata)
+        if text_chunks:
+            vectorstore = get_vectorstore(text_chunks, chunk_metadata)
+            st.session_state.conversation = get_conversation_chain(vectorstore)
 
     user_question = st.text_input("Ask a question about the document(s):")
     if user_question:
