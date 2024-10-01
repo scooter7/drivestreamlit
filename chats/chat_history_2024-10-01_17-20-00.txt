@@ -1,0 +1,6 @@
+Timestamp: 2024-10-01_17-20-00
+User question: what are our online advertising methods?
+Bot response: Based on the provided context, one of the online advertising methods used by the company appears to be Student Search efforts facilitated by Enrollment Strategists. Enrollment Strategists specialize in developing strategies, analyzing performance, and optimizing Student Search efforts online to help clients reach their enrollment goals. This method involves utilizing online platforms to target and attract prospective students to the client's educational offerings.
+
+**Citations**:
+- Enrollment Strategy (https://docs.google.com/document/d/1Bh0SwzfkO4ENjLy7a0fVzUUDpLQpsHqtwDE99eo8nok)
