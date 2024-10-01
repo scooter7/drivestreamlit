@@ -1,10 +1,13 @@
+import os
 import streamlit as st
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
-import openai
+from openai import OpenAI  # Import OpenAI client
 
-# Set up OpenAI API
-openai.api_key = st.secrets["openai"]["api_key"]  # Access OpenAI API key from Streamlit secrets
+# Set up OpenAI API client
+client = OpenAI(
+    api_key=st.secrets["openai"]["api_key"]  # Access OpenAI API key from Streamlit secrets
+)
 
 # Google Drive and Docs API setup
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly', 'https://www.googleapis.com/auth/documents.readonly']
@@ -32,21 +35,35 @@ def get_document_content(doc_id):
                     content += text_run['textRun']['content']
     return content
 
-# OpenAI Chat with correct API syntax
-def chat_with_document(content, question):
-    response = openai.chat.completions.create(
-        model="gpt-4o-mini",  # Use GPT-4o-mini model
+# Function to filter document content based on keywords
+def keyword_filter(content, keywords):
+    filtered_sections = []
+    for paragraph in content.split("\n"):
+        if any(keyword.lower() in paragraph.lower() for keyword in keywords):
+            filtered_sections.append(paragraph)
+    return filtered_sections
+
+# Function to query GPT-3.5-turbo
+def query_gpt(filtered_sections, question):
+    # Concatenate the relevant sections to form the context
+    context = "\n".join(filtered_sections)
+    
+    # If no relevant sections were found, return early
+    if not context:
+        return "Sorry, no relevant information was found in the document regarding your query."
+    
+    # Query GPT-3.5-turbo with the context and question using the new client format
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": f"Here is the document content: {content}. Now, answer this question: {question}"}
+            {"role": "user", "content": f"Context: {context}\n\nAnswer the following question: {question}"}
         ],
-        max_tokens=150
+        max_tokens=500  # Adjust based on the desired length of the response
     )
-    
-    # Extract the message content from the response
-    message_content = response.choices[0].message.content  # Access the 'content' as an object attribute
-    
-    return message_content
+
+    # Extract the response content (updated to use attribute access)
+    return response.choices[0].message.content
 
 # Streamlit App
 folder_id = st.text_input("Enter the Google Drive folder ID")
@@ -58,10 +75,17 @@ if folder_id:
     if selected_doc:
         doc_id = next(doc['id'] for doc in docs if doc['name'] == selected_doc)
         # Get document content from Google Docs
-        doc_content = get_document_content(doc_id)  # Fetch the actual document content
+        doc_content = get_document_content(doc_id)
+        
+        # Ask the user for the query
         user_question = st.text_input("Ask a question about the document")
         
         if user_question:
-            answer = chat_with_document(doc_content, user_question)
+            # Use keywords to filter the document
+            keywords = user_question.split()  # Simple keyword extraction from the user question
+            filtered_sections = keyword_filter(doc_content, keywords)
+            
+            # Query GPT-3.5-turbo with the filtered sections
+            answer = query_gpt(filtered_sections, user_question)
             if answer:
-                st.write(f"Answer: {answer}")
+                st.write(f"**Answer:** {answer}")
