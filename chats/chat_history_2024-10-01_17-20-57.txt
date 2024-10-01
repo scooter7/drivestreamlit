@@ -1,0 +1,6 @@
+Timestamp: 2024-10-01_17-20-57
+User question: what do we do about bias incidents?
+Bot response: At Carnegie, bias incidents are taken seriously and are addressed promptly. When a bias incident is reported, it is thoroughly investigated to determine the facts and any underlying motivations. The goal is to understand the impact on the victim or victims and the broader community. The necessary steps are then taken to address the incident, provide support to those affected, and prevent future occurrences. Depending on the severity and nature of the incident, appropriate disciplinary actions may be taken against the perpetrator(s). Additionally, educational efforts may be implemented to raise awareness and promote a more inclusive and respectful environment within the community.
+
+**Citations**:
+- HR and Ops (https://docs.google.com/document/d/1ixOvDqvRwOG4jG5XG3Sot3scNZCAtSpM7pAg1YyLx88)
