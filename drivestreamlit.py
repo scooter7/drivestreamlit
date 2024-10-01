@@ -39,31 +39,37 @@ def chunk_content(content, max_length=1500):
     wrapped_content = textwrap.wrap(content, max_length)
     return wrapped_content
 
-# OpenAI Chat with improved content querying logic
+# OpenAI Chat with enhanced prompt and better response handling
 def chat_with_document(content, question):
     chunks = chunk_content(content)
+    full_answer = ""
 
     for chunk in chunks:
-        prompt = f"The following is a section of a document. Based on this section, answer the question: {question}. Provide the response based only on the document content.\n\n{chunk}"
-        
+        # The prompt now asks the model to specifically focus on vacation policy and return only related information
+        prompt = f"The following is a section of a document. Based on this section, provide information regarding the vacation policy, if present. If no relevant information is found in this section, mention that the section does not include vacation policy information.\n\n{chunk}"
+
         response = openai.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=100,  # Allow more tokens for detailed responses
-            temperature=0.2  # Low temperature to ensure accuracy
+            max_tokens=100,  # Allow enough tokens for detailed responses
+            temperature=0.2  # Low temperature to reduce verbosity
         )
-        
+
         # Extract the message content from the response
         answer = response.choices[0].message.content.strip()
-        
-        # Return the first valid answer and stop further processing
-        if answer:
-            return answer
 
-    return "The document does not contain information about the vacation policy."
+        # Check if the answer provides relevant information about the vacation policy
+        if "vacation policy" in answer.lower():
+            full_answer += answer + "\n"
+
+    # If no relevant vacation policy information is found
+    if not full_answer:
+        return "The document does not contain any information regarding the vacation policy."
+    
+    return full_answer.strip()
 
 # Streamlit App
 folder_id = st.secrets["google"]["folder_id"]  # Use the folder ID from Streamlit secrets
