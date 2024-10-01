@@ -1,23 +1,15 @@
 import streamlit as st
-from io import BytesIO
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
-from PyPDF2 import PdfReader
 import openai
-from langchain.text_splitter import CharacterTextSplitter  # Correct import
-from langchain_community.embeddings import OpenAIEmbeddings  # Updated for community
-from langchain_community.vectorstores import FAISS  # Updated for community
-from langchain.chat_models import ChatOpenAI  # Correct import remains
-from langchain.memory import ConversationBufferMemory  # Correct import remains
-from langchain.chains import ConversationalRetrievalChain  # Correct import remains
-from langchain.schema import Document  # Correct import remains
 
 # Set up OpenAI API
-openai.api_key = st.secrets["openai"]["api_key"]
+openai.api_key = st.secrets["openai"]["api_key"]  # Access OpenAI API key from Streamlit secrets
 
 # Google Drive and Docs API setup
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly', 'https://www.googleapis.com/auth/documents.readonly']
-credentials = service_account.Credentials.from_service_account_info(st.secrets["google"], scopes=SCOPES)
+credentials = service_account.Credentials.from_service_account_info(
+    st.secrets["google"], scopes=SCOPES)  # Access Google credentials from Streamlit secrets
 
 drive_service = build('drive', 'v3', credentials=credentials)
 docs_service = build('docs', 'v1', credentials=credentials)
@@ -29,118 +21,57 @@ def get_google_docs_from_folder(folder_id):
     items = results.get('files', [])
     return items
 
-# Function to export content from a Google Doc in plain text format
-def export_google_doc_content(doc_id):
-    request = drive_service.files().export_media(fileId=doc_id, mimeType='text/plain')
-    file_content = request.execute()
-    return file_content.decode('utf-8')
+# Function to get content from a Google Doc
+def get_document_content(doc_id):
+    document = docs_service.documents().get(documentId=doc_id).execute()
+    content = ""
+    for element in document.get('body').get('content', []):
+        if 'paragraph' in element:
+            for text_run in element['paragraph']['elements']:
+                if 'textRun' in text_run:
+                    content += text_run['textRun']['content']
+    return content
 
-# Function to process PDFs from Google Drive and get their content
-def get_pdf_text(pdf_docs, pdf_names):
-    text = []
-    metadata = []
-    for pdf, pdf_name in zip(pdf_docs, pdf_names):
-        pdf_reader = PdfReader(pdf)
-        for page_num, page in enumerate(pdf_reader.pages):
-            page_text = page.extract_text()
-            if page_text:
-                text.append(page_text)
-                metadata.append({'source': f"{pdf_name} - Page {page_num + 1}"})
-    return text, metadata
-
-# Function to chunk text content
-def get_text_chunks(texts, metadata):
-    text_splitter = CharacterTextSplitter(separator="\n", chunk_size=1000, chunk_overlap=200)
-    chunks = []
-    chunk_metadata = []
-    for i, page_text in enumerate(texts):
-        page_chunks = text_splitter.split_text(page_text)
-        chunks.extend(page_chunks)
-        chunk_metadata.extend([metadata[i]] * len(page_chunks))  # Attach metadata to each chunk
-    return chunks, chunk_metadata
-
-# Function to create a vectorstore
-def get_vectorstore(text_chunks, chunk_metadata):
-    if not text_chunks:
-        raise ValueError("No text chunks available for embedding.")
+# OpenAI Chat with correct API syntax
+def chat_with_document(content, question):
+    # Handle large content by truncating or summarizing if needed
+    if len(content) > 5000:
+        content = content[:5000] + "..."  # Truncate the content if it's too long
     
-    embeddings = OpenAIEmbeddings(openai_api_key=openai.api_key)
-    documents = [Document(page_content=chunk, metadata=chunk_metadata[i]) for i, chunk in enumerate(text_chunks)]
-    
-    # Debug: Log embedded document information
-    for i, doc in enumerate(documents):
-        st.write(f"Embedding document chunk {i}: {doc.metadata['source']}")
-    
-    vectorstore = FAISS.from_documents(documents, embedding=embeddings)
-    return vectorstore
-
-def get_conversation_chain(vectorstore):
-    openai_api_key = st.secrets["openai"]["api_key"]  # Ensure the API key is accessed from secrets
-    llm = ChatOpenAI(openai_api_key=openai_api_key)  # Pass the API key explicitly to ChatOpenAI
-    memory = ConversationBufferMemory(memory_key='chat_history', return_messages=True, output_key='answer')
-    conversation_chain = ConversationalRetrievalChain.from_llm(
-        llm=llm, 
-        retriever=vectorstore.as_retriever(), 
-        memory=memory, 
-        return_source_documents=True
+    response = openai.ChatCompletion.create(
+        model="gpt-4o-mini",  # Use GPT-4o-mini model
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": f"Here is the document content: {content}. Now, answer this question: {question}"}
+        ],
+        max_tokens=300
     )
-    return conversation_chain
-
-# Main function to handle user input and display answers
-def handle_userinput(user_question):
-    if 'conversation' in st.session_state and st.session_state.conversation:
-        response = st.session_state.conversation({'question': user_question})
-        st.session_state.chat_history = response['chat_history']
-        
-        # Extract answer and sources
-        answer = response['answer']
-        source_documents = response.get('source_documents', [])
-        
-        # Log retrieved documents for debugging
-        for doc in source_documents:
-            st.write(f"Retrieved document: {doc.metadata['source']}")
-        
-        citations = [doc.metadata['source'] for doc in source_documents if doc.metadata]
-        modified_answer = modify_response_language(answer, citations)
-        st.write(modified_answer)
-
-# Function to modify response language and add citations
-def modify_response_language(original_response, citations=None):
-    response = original_response.replace(" they ", " we ").replace(" their ", " our ")
     
-    if citations:
-        # Remove duplicate citations
-        unique_citations = list(dict.fromkeys(citations))  # This ensures only unique citations are added
-        response += "\n\nSources:\n" + "\n".join(f"- {citation}" for citation in unique_citations)
+    # Extract the message content from the response
+    message_content = response.choices[0].message['content']  # Access the 'content' as a dictionary attribute
+    
+    return message_content
 
-    return response
+# Streamlit App
+st.title("Query Google Docs and Get Answers")
 
-# Streamlit app
-def main():
-    st.title("Ask Carnegie Everything")
-
-    if 'conversation' not in st.session_state:
-        st.session_state.conversation = None
-    if 'chat_history' not in st.session_state:
-        st.session_state.chat_history = []
-
-    folder_id = st.secrets["google"]["folder_id"]
+folder_id = st.text_input("Enter the Google Drive folder ID")
+if folder_id:
     docs = get_google_docs_from_folder(folder_id)
     doc_choices = [doc['name'] for doc in docs]
-    selected_docs = st.multiselect("Select one or more documents to query", doc_choices)
+    selected_doc = st.selectbox("Select a document to query", doc_choices)
 
-    if selected_docs:
-        # Process the Google Docs by exporting them as plain text
-        doc_contents = [export_google_doc_content(doc['id']) for doc in docs if doc['name'] in selected_docs]
-        raw_text, source_metadata = get_text_chunks(doc_contents, [{'source': name} for name in selected_docs])
-
-        if raw_text:
-            vectorstore = get_vectorstore(raw_text, source_metadata)
-            st.session_state.conversation = get_conversation_chain(vectorstore)
-
-    user_question = st.text_input("Ask a question about the document(s):")
-    if user_question:
-        handle_userinput(user_question)
-
-if __name__ == '__main__':
-    main()
+    if selected_doc:
+        doc_id = next(doc['id'] for doc in docs if doc['name'] == selected_doc)
+        # Get document content from Google Docs
+        doc_content = get_document_content(doc_id)  # Fetch the actual document content
+        
+        # Display the fetched document content
+        st.write(f"Document Content: {doc_content[:2000]}...")  # Show a truncated version of the document for display
+        
+        user_question = st.text_input("Ask a question about the document")
+        
+        if user_question:
+            answer = chat_with_document(doc_content, user_question)
+            if answer:
+                st.write(f"Answer: {answer}")
