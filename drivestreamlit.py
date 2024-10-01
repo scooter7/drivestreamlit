@@ -1,15 +1,23 @@
 import streamlit as st
+from io import BytesIO
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
+from PyPDF2 import PdfReader
 import openai
+from langchain.text_splitter import CharacterTextSplitter
+from langchain.embeddings import OpenAIEmbeddings
+from langchain.vectorstores import FAISS
+from langchain.chat_models import ChatOpenAI
+from langchain.memory import ConversationBufferMemory
+from langchain.chains import ConversationalRetrievalChain
+from langchain.schema import Document
 
 # Set up OpenAI API
-openai.api_key = st.secrets["openai"]["api_key"]  # Access OpenAI API key from Streamlit secrets
+openai.api_key = st.secrets["openai"]["api_key"]
 
 # Google Drive and Docs API setup
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly', 'https://www.googleapis.com/auth/documents.readonly']
-credentials = service_account.Credentials.from_service_account_info(
-    st.secrets["google"], scopes=SCOPES)  # Access Google credentials from Streamlit secrets
+credentials = service_account.Credentials.from_service_account_info(st.secrets["google"], scopes=SCOPES)
 
 drive_service = build('drive', 'v3', credentials=credentials)
 docs_service = build('docs', 'v1', credentials=credentials)
@@ -32,36 +40,95 @@ def get_document_content(doc_id):
                     content += text_run['textRun']['content']
     return content.strip()
 
-# OpenAI Chat with improved prompt
-def chat_with_document(content, question):
-    response = openai.chat.completions.create(
-        model="gpt-4o-mini",  # Use GPT-4o-mini model
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant that provides clear and concise answers."},
-            {"role": "user", "content": f"The following is document content: {content}\nPlease answer the question: {question}"}
-        ],
-        max_tokens=150,
-        temperature=0.3  # Reduce temperature for concise and focused responses
+# Function to process PDFs from Google Drive and get their content
+def get_pdf_text(pdf_docs, pdf_names):
+    text = []
+    metadata = []
+    for pdf, pdf_name in zip(pdf_docs, pdf_names):
+        pdf_reader = PdfReader(pdf)
+        for page_num, page in enumerate(pdf_reader.pages):
+            page_text = page.extract_text()
+            if page_text:
+                text.append(page_text)
+                metadata.append({'source': f"{pdf_name} - Page {page_num + 1}"})
+    return text, metadata
+
+# Function to chunk text content
+def get_text_chunks(text, metadata):
+    text_splitter = CharacterTextSplitter(separator="\n", chunk_size=1000, chunk_overlap=200, length_function=len)
+    chunks = []
+    chunk_metadata = []
+    for i, page_text in enumerate(text):
+        page_chunks = text_splitter.split_text(page_text)
+        chunks.extend(page_chunks)
+        chunk_metadata.extend([metadata[i]] * len(page_chunks))  # Assign correct metadata to each chunk
+    return chunks, chunk_metadata
+
+# Function to create a vectorstore
+def get_vectorstore(text_chunks, chunk_metadata):
+    if not text_chunks:
+        raise ValueError("No text chunks available for embedding.")
+    embeddings = OpenAIEmbeddings()
+    documents = [Document(page_content=chunk, metadata=chunk_metadata[i]) for i, chunk in enumerate(text_chunks)]
+    vectorstore = FAISS.from_documents(documents, embedding=embeddings)
+    return vectorstore
+
+# Function to create a conversation chain using the vectorstore
+def get_conversation_chain(vectorstore):
+    llm = ChatOpenAI()
+    memory = ConversationBufferMemory(memory_key='chat_history', return_messages=True, output_key='answer')
+    conversation_chain = ConversationalRetrievalChain.from_llm(
+        llm=llm, 
+        retriever=vectorstore.as_retriever(), 
+        memory=memory, 
+        return_source_documents=True
     )
-    
-    # Extract the message content from the response
-    message_content = response.choices[0].message['content']  # Access the 'content' as a dictionary attribute
-    
-    return message_content
+    return conversation_chain
 
-# Streamlit App
-folder_id = st.secrets["google"]["folder_id"]  # Access folder ID directly from Streamlit secrets
-docs = get_google_docs_from_folder(folder_id)
-doc_choices = [doc['name'] for doc in docs]
-selected_doc = st.selectbox("Select a document to query", doc_choices)
+# Main function to handle user input and display answers
+def handle_userinput(user_question):
+    if 'conversation' in st.session_state and st.session_state.conversation:
+        response = st.session_state.conversation({'question': user_question})
+        st.session_state.chat_history = response['chat_history']
+        answer = response['answer']
+        source_documents = response.get('source_documents', [])
+        citations = [doc.metadata['source'] for doc in source_documents if doc.metadata]
+        modified_answer = modify_response_language(answer, citations)
+        st.write(modified_answer)
 
-if selected_doc:
-    doc_id = next(doc['id'] for doc in docs if doc['name'] == selected_doc)
-    # Get document content from Google Docs
-    doc_content = get_document_content(doc_id)  # Fetch the actual document content
-    user_question = st.text_input("Ask a question about the document")
-    
+# Function to modify response language and add citations
+def modify_response_language(original_response, citations=None):
+    response = original_response.replace(" they ", " we ").replace(" their ", " our ")
+    if citations:
+        response += "\n\nSources:\n" + "\n".join(f"- {citation}" for citation in citations)
+    return response
+
+# Streamlit app
+def main():
+    st.title("Ask Carnegie Everything")
+
+    if 'conversation' not in st.session_state:
+        st.session_state.conversation = None
+    if 'chat_history' not in st.session_state:
+        st.session_state.chat_history = []
+
+    folder_id = st.secrets["google"]["folder_id"]
+    docs = get_google_docs_from_folder(folder_id)
+    doc_choices = [doc['name'] for doc in docs]
+    selected_docs = st.multiselect("Select one or more documents to query", doc_choices)
+
+    if selected_docs:
+        pdf_docs = [BytesIO(docs_service.files().get_media(fileId=doc['id']).execute()) for doc in docs if doc['name'] in selected_docs]
+        pdf_names = [doc['name'] for doc in docs if doc['name'] in selected_docs]
+        raw_text, source_metadata = get_pdf_text(pdf_docs, pdf_names)
+        text_chunks, chunk_metadata = get_text_chunks(raw_text, source_metadata)
+        if text_chunks:
+            vectorstore = get_vectorstore(text_chunks, chunk_metadata)
+            st.session_state.conversation = get_conversation_chain(vectorstore)
+
+    user_question = st.text_input("Ask a question about the document(s):")
     if user_question:
-        answer = chat_with_document(doc_content, user_question)
-        if answer:
-            st.write(f"Answer: {answer}")
+        handle_userinput(user_question)
+
+if __name__ == '__main__':
+    main()
