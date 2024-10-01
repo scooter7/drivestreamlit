@@ -41,7 +41,7 @@ def chat_with_document(content, question):
         max_tokens=300
     )
     
-    message_content = response.choices[0].message['content']
+    message_content = response.choices[0].message.content  # Correct extraction of content
     
     return message_content
 
