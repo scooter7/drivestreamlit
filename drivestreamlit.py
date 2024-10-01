@@ -2,7 +2,7 @@ import streamlit as st
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import openai
-from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
 from langchain.schema import Document
 
