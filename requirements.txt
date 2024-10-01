@@ -1,3 +1,4 @@
+# Initial requirements
 streamlit
 google-api-python-client
 google-auth
@@ -8,3 +9,6 @@ PyYAML
 pandas
 requests
 gspread
+langchain
+faiss-cpu
+PyJWT
