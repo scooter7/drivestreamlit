@@ -1,0 +1,6 @@
+Timestamp: 2024-10-01_17-18-39
+User question: how should we dress for meetings?
+Bot response: For meetings at Carnegie, it is generally recommended to dress professionally. This usually means wearing business attire such as suits, dress shirts, and ties for men, and suits, dresses, skirts, or dress pants for women. It's important to be well-groomed and to dress in a way that shows respect for the professional setting. Additionally, it's always a good idea to check if there is a specific dress code for the meeting or event you will be attending.
+
+**Citations**:
+- HR and Ops (https://docs.google.com/document/d/1ixOvDqvRwOG4jG5XG3Sot3scNZCAtSpM7pAg1YyLx88)
