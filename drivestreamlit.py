@@ -2,10 +2,11 @@ import streamlit as st
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import openai
-from langchain.text_splitter import CharacterTextSplitter
 
+# Set up OpenAI API
 openai.api_key = st.secrets["openai"]["api_key"]
 
+# Google Drive and Docs API setup
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly', 'https://www.googleapis.com/auth/documents.readonly']
 credentials = service_account.Credentials.from_service_account_info(
     st.secrets["google"], scopes=SCOPES)
@@ -13,12 +14,14 @@ credentials = service_account.Credentials.from_service_account_info(
 drive_service = build('drive', 'v3', credentials=credentials)
 docs_service = build('docs', 'v1', credentials=credentials)
 
+# Function to get docs from Google Drive
 def get_google_docs_from_folder(folder_id):
     query = f"'{folder_id}' in parents and mimeType='application/vnd.google-apps.document'"
     results = drive_service.files().list(q=query, fields="files(id, name)").execute()
     items = results.get('files', [])
     return items
 
+# Function to get content from a Google Doc
 def get_document_content(doc_id):
     document = docs_service.documents().get(documentId=doc_id).execute()
     content = ""
@@ -29,18 +32,17 @@ def get_document_content(doc_id):
                     content += text_run['textRun']['content']
     return content
 
-# Function to split document into smaller chunks
-def split_document_content(content):
-    splitter = CharacterTextSplitter(separator="\n", chunk_size=1000, chunk_overlap=200)
-    return splitter.split_text(content)
-
-# Function to find the most relevant document chunk to the query
-def find_relevant_chunk(chunks, query):
-    for chunk in chunks:
-        if query.lower() in chunk.lower():
-            return chunk
+# Keyword-based search within the document
+def find_relevant_section(content, keyword):
+    keyword = keyword.lower()
+    content_lower = content.lower()
+    if keyword in content_lower:
+        start_index = content_lower.find(keyword)
+        # Grab a portion of text around the keyword for better context
+        return content[max(0, start_index-500):min(len(content), start_index+500)]
     return None
 
+# OpenAI Chat function with content optimization
 def chat_with_document(content, question):
     if len(content) > 5000:
         content = content[:5000] + "..."
@@ -54,10 +56,11 @@ def chat_with_document(content, question):
         max_tokens=300
     )
     
-    message_content = response.choices[0].message.content
+    message_content = response.choices[0].message['content']
     
     return message_content
 
+# Streamlit App
 st.title("Query Google Docs and Get Answers")
 
 folder_id = st.text_input("Enter the Google Drive folder ID")
@@ -70,20 +73,19 @@ if folder_id:
         doc_id = next(doc['id'] for doc in docs if doc['name'] == selected_doc)
         doc_content = get_document_content(doc_id)
         
-        st.write(f"Document Content: {doc_content[:2000]}...")
+        st.write(f"Document Content (first 2000 characters): {doc_content[:2000]}...")
         
         user_question = st.text_input("Ask a question about the document")
         
         if user_question:
-            # Split document into smaller chunks
-            doc_chunks = split_document_content(doc_content)
-            # Find the most relevant chunk to the user's question
-            relevant_chunk = find_relevant_chunk(doc_chunks, user_question)
+            keyword = user_question.split()[-1]  # Assuming the keyword is the last word of the question
+            relevant_section = find_relevant_section(doc_content, keyword)
             
-            if relevant_chunk:
-                st.write(f"Relevant Section: {relevant_chunk[:500]}...")
-                answer = chat_with_document(relevant_chunk, user_question)
-                if answer:
-                    st.write(f"Answer: {answer}")
+            if relevant_section:
+                st.write(f"Relevant Section: {relevant_section[:500]}...")
+                answer = chat_with_document(relevant_section, user_question)
             else:
-                st.write("The document does not contain any relevant information about the question.")
+                answer = "The document does not contain any relevant information about the question."
+            
+            if answer:
+                st.write(f"Answer: {answer}")
