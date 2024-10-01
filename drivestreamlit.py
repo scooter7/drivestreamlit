@@ -29,16 +29,12 @@ def get_google_docs_from_folder(folder_id):
     items = results.get('files', [])
     return items
 
-# Function to get content from a Google Doc
-def get_document_content(doc_id):
-    document = docs_service.documents().get(documentId=doc_id).execute()
-    content = ""
-    for element in document.get('body').get('content', []):
-        if 'paragraph' in element:
-            for text_run in element['paragraph']['elements']:
-                if 'textRun' in text_run:
-                    content += text_run['textRun']['content']
-    return content.strip()
+# Function to export content from a Google Doc in plain text format
+def export_google_doc_content(doc_id):
+    # Use the `export_media` method to export Google Docs in text format
+    request = drive_service.files().export_media(fileId=doc_id, mimeType='text/plain')
+    file_content = request.execute()
+    return file_content.decode('utf-8')
 
 # Function to process PDFs from Google Drive and get their content
 def get_pdf_text(pdf_docs, pdf_names):
@@ -118,12 +114,12 @@ def main():
     selected_docs = st.multiselect("Select one or more documents to query", doc_choices)
 
     if selected_docs:
-        pdf_docs = [BytesIO(drive_service.files().get_media(fileId=doc['id']).execute()) for doc in docs if doc['name'] in selected_docs]
-        pdf_names = [doc['name'] for doc in docs if doc['name'] in selected_docs]
-        raw_text, source_metadata = get_pdf_text(pdf_docs, pdf_names)
-        text_chunks, chunk_metadata = get_text_chunks(raw_text, source_metadata)
-        if text_chunks:
-            vectorstore = get_vectorstore(text_chunks, chunk_metadata)
+        # Process the Google Docs by exporting them as plain text
+        doc_contents = [export_google_doc_content(doc['id']) for doc in docs if doc['name'] in selected_docs]
+        raw_text, source_metadata = get_text_chunks(doc_contents, [{'source': name} for name in selected_docs])
+
+        if raw_text:
+            vectorstore = get_vectorstore(raw_text, source_metadata)
             st.session_state.conversation = get_conversation_chain(vectorstore)
 
     user_question = st.text_input("Ask a question about the document(s):")
