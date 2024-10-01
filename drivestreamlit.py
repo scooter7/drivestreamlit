@@ -2,7 +2,7 @@ import streamlit as st
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import openai
-from langchain.embeddings import OpenAIEmbeddings
+from langchain.embeddings.openai import OpenAIEmbeddings  # Corrected import for OpenAI embeddings
 from langchain.vectorstores import FAISS
 from langchain.schema import Document
 
@@ -67,7 +67,7 @@ def chat_with_document(content, question):
         max_tokens=300
     )
     
-    message_content = response.choices[0]['message']['content']
+    message_content = response.choices[0].message['content']
     
     return message_content
 
