@@ -94,8 +94,12 @@ def handle_userinput(user_question):
 # Function to modify response language and add citations
 def modify_response_language(original_response, citations=None):
     response = original_response.replace(" they ", " we ").replace(" their ", " our ")
+
     if citations:
-        response += "\n\nSources:\n" + "\n".join(f"- {citation}" for citation in citations)
+        # Remove duplicate citations
+        unique_citations = list(dict.fromkeys(citations))  # This ensures only unique citations are added
+        response += "\n\nSources:\n" + "\n".join(f"- {citation}" for citation in unique_citations)
+
     return response
 
 # Streamlit app
