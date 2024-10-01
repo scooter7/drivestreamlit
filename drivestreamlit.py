@@ -64,16 +64,25 @@ def chat_with_document_langchain(content, question):
     # Create a RetrievalQA chain
     qa_chain = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=retriever)
     
+    # Track if we find any relevant answers
+    final_answer = ""
+    
     # Process chunks and get answers for each
-    answers = []
     for text_chunk in texts:
         try:
             answer = qa_chain.run(question)
-            answers.append(answer)
+            if "I'm sorry" not in answer:
+                final_answer += answer + "\n"
+                # Break the loop if an answer is found
+                break
         except Exception as e:
             st.write(f"Error while processing chunk: {e}")
     
-    return "\n".join(answers)
+    # If no answer found, return a single message
+    if final_answer == "":
+        final_answer = "Sorry, no relevant information was found in the document regarding your query."
+    
+    return final_answer
 
 # Streamlit App
 folder_id = st.text_input("Enter the Google Drive folder ID")
