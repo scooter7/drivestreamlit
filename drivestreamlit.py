@@ -2,7 +2,6 @@ import streamlit as st
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 import openai
-import textwrap
 
 # Set up OpenAI API
 openai.api_key = st.secrets["openai"]["api_key"]  # Access OpenAI API key from Streamlit secrets
@@ -24,68 +23,45 @@ def get_google_docs_from_folder(folder_id):
 
 # Function to get content from a Google Doc
 def get_document_content(doc_id):
-    """ Extracts the full text content from a Google Document """
     document = docs_service.documents().get(documentId=doc_id).execute()
     content = ""
-    for element in document.get('body').get('content', []):
+    for element in document.get('body').get('content'):
         if 'paragraph' in element:
             for text_run in element['paragraph']['elements']:
-                if 'textRun' in text_run and 'content' in text_run['textRun']:
-                    content += text_run['textRun']['content'] + " "
-    return content.strip()
+                if 'textRun' in text_run:
+                    content += text_run['textRun']['content']
+    return content
 
-# Helper function to chunk the document content into smaller pieces
-def chunk_content(content, max_length=1500):
-    wrapped_content = textwrap.wrap(content, max_length)
-    return wrapped_content
-
-# OpenAI Chat with enhanced logic to prevent redundant responses
+# OpenAI Chat with correct API syntax
 def chat_with_document(content, question):
-    chunks = chunk_content(content)
-
-    for chunk in chunks:
-        # Direct prompt asking for specific content related to the question
-        prompt = f"Based on the following document section, answer the question: '{question}'. If no relevant information is found, simply state 'No relevant information found.' Do not repeat yourself unnecessarily.\n\n{chunk}"
-        
-        response = openai.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You are a concise assistant."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=100,  # Enough tokens for concise answers
-            temperature=0.2  # Lower temperature for deterministic answers
-        )
-
-        # Extract the message content from the response
-        answer = response.choices[0].message['content'].strip()
-
-        # Stop processing if we get a valid non-redundant answer
-        if answer and answer != "No relevant information found.":
-            return answer
-
-    # If no relevant information is found across all chunks
-    return "No relevant information found."
+    response = openai.chat.completions.create(
+        model="gpt-4o-mini",  # Use GPT-4o-mini model
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": f"Here is the document content: {content}. Now, answer this question: {question}"}
+        ],
+        max_tokens=150
+    )
+    
+    # Extract the message content from the response
+    message_content = response.choices[0].message.content  # Access the 'content' as an object attribute
+    
+    return message_content
 
 # Streamlit App
-folder_id = st.secrets["google"]["folder_id"]  # Use the folder ID from Streamlit secrets
-docs = get_google_docs_from_folder(folder_id)
-doc_choices = [doc['name'] for doc in docs]
+folder_id = st.text_input("Enter the Google Drive folder ID")
+if folder_id:
+    docs = get_google_docs_from_folder(folder_id)
+    doc_choices = [doc['name'] for doc in docs]
+    selected_doc = st.selectbox("Select a document to query", doc_choices)
 
-# Multi-select for selecting multiple Google Docs
-selected_docs = st.multiselect("Select one or more documents to query", doc_choices)
-
-if selected_docs:
-    # Single text input area for entering the question
-    user_question = st.text_input("Ask a question to query across the selected documents")
-
-    if user_question:
-        for doc_name in selected_docs:
-            doc_id = next(doc['id'] for doc in docs if doc['name'] == doc_name)
-            # Get document content from Google Docs
-            doc_content = get_document_content(doc_id)
-            
-            # Query each document with the same question
+    if selected_doc:
+        doc_id = next(doc['id'] for doc in docs if doc['name'] == selected_doc)
+        # Get document content from Google Docs
+        doc_content = get_document_content(doc_id)  # Fetch the actual document content
+        user_question = st.text_input("Ask a question about the document")
+        
+        if user_question:
             answer = chat_with_document(doc_content, user_question)
             if answer:
-                st.write(f"Answer for {doc_name}: {answer}")
+                st.write(f"Answer: {answer}")
