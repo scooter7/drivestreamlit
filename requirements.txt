@@ -12,3 +12,4 @@ gspread
 langchain
 faiss-cpu
 PyJWT
+langchain-community
