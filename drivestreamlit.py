@@ -41,15 +41,35 @@ def get_document_content(doc_id):
                     content += text_run['textRun']['content']
     return content
 
-# Function to filter document content based on keywords and return relevant sections and doc IDs
-def keyword_filter(content, keywords, doc_name, doc_id):
+# Function to filter document content based on keywords
+def keyword_filter(content, keywords):
     filtered_sections = []
-    citations = set()  # To track which documents provide relevant content
     for paragraph in content.split("\n"):
         if any(keyword.lower() in paragraph.lower() for keyword in keywords):
             filtered_sections.append(paragraph)
-            citations.add((doc_name, doc_id))  # Track which document this came from
-    return filtered_sections, citations
+    return filtered_sections
+
+# Function to query GPT-3.5-turbo
+def query_gpt(filtered_sections, question):
+    # Concatenate the relevant sections to form the context
+    context = "\n".join(filtered_sections)
+    
+    # If no relevant sections were found, return early
+    if not context:
+        return "Sorry, no relevant information was found in the document regarding your query."
+    
+    # Query GPT-3.5-turbo with the context and question
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": f"Context: {context}\n\nAnswer the following question: {question}"}
+        ],
+        max_tokens=500  # Adjust based on the desired length of the response
+    )
+
+    # Extract the response content
+    return response.choices[0].message.content
 
 # Function to save chat logs to GitHub
 def save_chat_to_github(user_question, bot_response):
@@ -85,34 +105,6 @@ def save_chat_to_github(user_question, bot_response):
     except Exception as e:
         st.error(f"An error occurred: {e}")
 
-# Function to query GPT-3.5-turbo and return the response and citations
-def query_gpt(filtered_sections, question, citations):
-    # Concatenate the relevant sections to form the context
-    context = "\n".join(filtered_sections)
-    
-    # If no relevant sections were found, return early
-    if not context:
-        return "Sorry, no relevant information was found in the document regarding your query."
-    
-    # Query GPT-3.5-turbo with the context and question using the new client format
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": f"Context: {context}\n\nAnswer the following question: {question}"}
-        ],
-        max_tokens=500  # Adjust based on the desired length of the response
-    )
-
-    # Extract the response content (updated to use attribute access)
-    bot_response = response.choices[0].message.content
-
-    # Add citations to the response
-    doc_links = "\n".join([f"- {doc_name} (https://docs.google.com/document/d/{doc_id})" for doc_name, doc_id in citations])
-    bot_response += f"\n\n**Citations**:\n{doc_links}"
-
-    return bot_response
-
 # Streamlit App
 folder_id = st.secrets["google"]["folder_id"]  # Retrieve the folder ID from the "google" section of Streamlit secrets
 docs = get_google_docs_from_folder(folder_id)
@@ -130,16 +122,13 @@ if selected_docs_names:
         # Use keywords to filter the document
         keywords = user_question.split()  # Simple keyword extraction from the user question
         filtered_sections = []
-        citations = set()  # Track which documents are relevant
         
-        # Filter sections for each selected document and collect citations
-        for doc, content in zip(selected_docs, doc_contents):
-            sections, doc_citations = keyword_filter(content, keywords, doc['name'], doc['id'])
-            filtered_sections.extend(sections)
-            citations.update(doc_citations)  # Collect only the docs that provide relevant content
+        # Filter sections for each selected document
+        for content in doc_contents:
+            filtered_sections.extend(keyword_filter(content, keywords))
         
         # Query GPT-3.5-turbo with the filtered sections
-        answer = query_gpt(filtered_sections, user_question, citations)
+        answer = query_gpt(filtered_sections, user_question)
         
         if answer:
             st.write(f"**Answer:** {answer}")
