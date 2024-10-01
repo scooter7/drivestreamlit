@@ -38,7 +38,7 @@ def chat_with_document(content, question):
     if len(content) > 5000:
         content = content[:5000] + "..."  # Truncate the content if it's too long
     
-    response = openai.ChatCompletion.create(
+    response = openai.chat.completions.create(
         model="gpt-4o-mini",  # Use GPT-4o-mini model
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
