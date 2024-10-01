@@ -9,3 +9,4 @@ requests
 pandas
 PyYAML
 langchain-community
+tiktoken
