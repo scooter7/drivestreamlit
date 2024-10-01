@@ -1,0 +1,6 @@
+Timestamp: 2024-10-01_16-43-44
+User question: vacation time
+Bot response: In the context provided, vacation time is not explicitly defined or discussed. However, in general terms, vacation time typically refers to the specific period of time that an employee is allowed to take off work for leisure, relaxation, travel, or personal reasons. The availability, accrual, and utilization of vacation time may vary depending on company policies, employment contracts, and applicable labor laws. If you have a specific question or need further information related to vacation time, please provide more details for a more tailored response.
+
+**Citations**:
+- HR and Ops (https://docs.google.com/document/d/1ixOvDqvRwOG4jG5XG3Sot3scNZCAtSpM7pAg1YyLx88)
