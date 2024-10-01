@@ -4,13 +4,13 @@ from googleapiclient.discovery import build
 from google.oauth2 import service_account
 from PyPDF2 import PdfReader
 import openai
-from langchain_community.text_splitter import CharacterTextSplitter
-from langchain_community.embeddings import OpenAIEmbeddings
-from langchain_community.vectorstores import FAISS
-from langchain_community.chat_models import ChatOpenAI
-from langchain_community.memory import ConversationBufferMemory
-from langchain_community.chains import ConversationalRetrievalChain
-from langchain_community.schema import Document
+from langchain.text_splitter import CharacterTextSplitter  # Correct import
+from langchain_community.embeddings import OpenAIEmbeddings  # Updated for community
+from langchain_community.vectorstores import FAISS  # Updated for community
+from langchain.chat_models import ChatOpenAI  # Correct import remains
+from langchain.memory import ConversationBufferMemory  # Correct import remains
+from langchain.chains import ConversationalRetrievalChain  # Correct import remains
+from langchain.schema import Document  # Correct import remains
 
 # Set up OpenAI API
 openai.api_key = st.secrets["openai"]["api_key"]
@@ -31,7 +31,6 @@ def get_google_docs_from_folder(folder_id):
 
 # Function to export content from a Google Doc in plain text format
 def export_google_doc_content(doc_id):
-    # Use the `export_media` method to export Google Docs in text format
     request = drive_service.files().export_media(fileId=doc_id, mimeType='text/plain')
     file_content = request.execute()
     return file_content.decode('utf-8')
@@ -64,7 +63,6 @@ def get_text_chunks(text, metadata):
 def get_vectorstore(text_chunks, chunk_metadata):
     if not text_chunks:
         raise ValueError("No text chunks available for embedding.")
-    # Ensure OpenAI API Key is passed correctly
     embeddings = OpenAIEmbeddings(openai_api_key=openai.api_key)
     documents = [Document(page_content=chunk, metadata=chunk_metadata[i]) for i, chunk in enumerate(text_chunks)]
     vectorstore = FAISS.from_documents(documents, embedding=embeddings)
