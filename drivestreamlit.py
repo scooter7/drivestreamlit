@@ -68,9 +68,9 @@ def get_vectorstore(text_chunks, chunk_metadata):
     vectorstore = FAISS.from_documents(documents, embedding=embeddings)
     return vectorstore
 
-# Function to create a conversation chain using the vectorstore
 def get_conversation_chain(vectorstore):
-    llm = ChatOpenAI()
+    openai_api_key = st.secrets["openai"]["api_key"]  # Ensure the API key is accessed from secrets
+    llm = ChatOpenAI(openai_api_key=openai_api_key)  # Pass the API key explicitly to ChatOpenAI
     memory = ConversationBufferMemory(memory_key='chat_history', return_messages=True, output_key='answer')
     conversation_chain = ConversationalRetrievalChain.from_llm(
         llm=llm, 
