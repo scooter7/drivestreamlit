@@ -1,0 +1,6 @@
+Timestamp: 2024-11-03_23-27-26
+User question: paid time off policy
+Bot response: The paid time off (PTO) policy allows employees to take time off from work while receiving their regular pay. Specifically, if you or a direct report takes PTO on a Friday, it is important to submit the timesheet before going on PTO. If the timesheet has not been submitted prior to taking PTO, a supervisor can submit it for the direct report and can also add 8 hours of PTO to the non-billable “OOO - PTO” project for them. This includes navigating to the “Unsubmitted tab” on the “Time” page, selecting the direct report's timesheet, and either submitting it for approval or adding the PTO hours.
+
+**Citations**:
+- HR and Ops (https://docs.google.com/document/d/1ixOvDqvRwOG4jG5XG3Sot3scNZCAtSpM7pAg1YyLx88)
