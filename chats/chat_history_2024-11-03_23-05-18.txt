@@ -1,0 +1,6 @@
+Timestamp: 2024-11-03_23-05-18
+User question: vacation policy
+Bot response: The provided document does not include any information regarding vacation policy. It primarily discusses the culture of inclusion, bias incidents, reporting procedures related to bias, and branding guidelines. For specific details on vacation policy, you may need to consult a different document or resource that addresses employee benefits and policies directly.
+
+**Citations**:
+- HR and Ops (https://docs.google.com/document/d/1ixOvDqvRwOG4jG5XG3Sot3scNZCAtSpM7pAg1YyLx88)
