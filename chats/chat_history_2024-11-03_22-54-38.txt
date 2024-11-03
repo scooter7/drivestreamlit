@@ -1,0 +1,6 @@
+Timestamp: 2024-11-03_22-54-38
+User question: what do we use for email?
+Bot response: The provided document does not specify which email system or platform is used for email communications at Carnegie. It mainly outlines policies and procedures regarding timesheets, parental leave, and other HR-related topics. To find out what email system is used, you may need to consult your IT department or internal resources directly.
+
+**Citations**:
+- HR and Ops (https://docs.google.com/document/d/1ixOvDqvRwOG4jG5XG3Sot3scNZCAtSpM7pAg1YyLx88)
