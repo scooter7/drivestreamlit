@@ -71,7 +71,7 @@ def query_gpt(filtered_sections, question, citations):
     
     # Query GPT-3.5-turbo with the context and question
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": f"Context: {context}\n\nAnswer the following question: {question}"}
