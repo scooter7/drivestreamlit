@@ -1,0 +1,7 @@
+Timestamp: 2024-11-03_22-36-26
+User question: paid time off policy
+Bot response: I'm sorry, but based on the context you provided, the information about the paid time off policy is not mentioned. It seems the focus is on Enrollment Strategists, Enrollment Data Specialists, and the history and responsibilities related to enrollment management at Carnegie. If you need more information or help with something else, please let me know.
+
+**Citations**:
+- HR and Ops (https://docs.google.com/document/d/1ixOvDqvRwOG4jG5XG3Sot3scNZCAtSpM7pAg1YyLx88)
+- Enrollment Strategy (https://docs.google.com/document/d/1Bh0SwzfkO4ENjLy7a0fVzUUDpLQpsHqtwDE99eo8nok)
