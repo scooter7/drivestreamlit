@@ -1,0 +1,6 @@
+Timestamp: 2024-11-03_22-35-19
+User question: do we have limits on vacation?
+Bot response: It appears that the text you provided focuses on promoting a culture of inclusion and non-discrimination in your organization, particularly addressing bias incidents and hate crimes. It does not mention anything specific about vacation limits for employees. If you are looking for information on vacation limits within your organization, I recommend checking your company's HR policies, employee handbook, or speaking with your HR department for specific details on vacation time and any associated limits.
+
+**Citations**:
+- HR and Ops (https://docs.google.com/document/d/1ixOvDqvRwOG4jG5XG3Sot3scNZCAtSpM7pAg1YyLx88)
