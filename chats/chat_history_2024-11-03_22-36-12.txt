@@ -1,0 +1,7 @@
+Timestamp: 2024-11-03_22-36-12
+User question: do we have limits on vacation time
+Bot response: I'm sorry, I cannot directly answer that question based on the information provided. Would you like me to help with suggesting edits or clarifications to the document instead?
+
+**Citations**:
+- HR and Ops (https://docs.google.com/document/d/1ixOvDqvRwOG4jG5XG3Sot3scNZCAtSpM7pAg1YyLx88)
+- Enrollment Strategy (https://docs.google.com/document/d/1Bh0SwzfkO4ENjLy7a0fVzUUDpLQpsHqtwDE99eo8nok)
