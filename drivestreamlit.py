@@ -42,19 +42,22 @@ def get_document_content(doc_id):
                     content += text_run['textRun']['content']
     return content
 
-# Function to find sections containing any term from the user's question
+# Function to find relevant sections with context-sensitive filtering
 def find_relevant_sections(content, question):
     question_terms = set(word.lower() for word in question.split())
     matched_sections = []
     fallback_sections = []
 
     for paragraph in content.split("\n"):
+        # Priority matching for specific terms related to email systems or platforms
         if any(term in paragraph.lower() for term in question_terms):
-            matched_sections.append(paragraph.strip())
-        elif any(keyword in paragraph.lower() for keyword in ["digital", "strategy", "market", "online"]):
-            fallback_sections.append(paragraph.strip())
+            if "email system" in paragraph.lower() or "platform" in paragraph.lower() or "Gmail" in paragraph or "Outlook" in paragraph:
+                matched_sections.append(paragraph.strip())
+            else:
+                # If no exact match, add to fallback for general mentions of "email"
+                fallback_sections.append(paragraph.strip())
 
-    # Use fallback sections if no direct matches
+    # Return matched sections if found; otherwise, fall back to broader mentions
     return matched_sections if matched_sections else fallback_sections
 
 # Function to dynamically assemble context with found matches
