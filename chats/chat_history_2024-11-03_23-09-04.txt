@@ -1,0 +1,6 @@
+Timestamp: 2024-11-03_23-09-04
+User question: vacation policy
+Bot response: The provided context does not include any specific information about a vacation policy. It discusses submitting timesheets, parental leave benefits, and related employee leave procedures but does not outline details on vacation policies. For information on the vacation policy, you may need to consult your company's HR department or employee handbook.
+
+**Citations**:
+- HR and Ops (https://docs.google.com/document/d/1ixOvDqvRwOG4jG5XG3Sot3scNZCAtSpM7pAg1YyLx88)
