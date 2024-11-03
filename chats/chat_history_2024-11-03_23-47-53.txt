@@ -1,0 +1,6 @@
+Timestamp: 2024-11-03_23-47-53
+User question: what do we use for email
+Bot response: We use Gmail as our email platform for official company correspondence, important updates, and requests for feedback and action items. It can be accessed via browser or Outlook, and the login credentials are the same as for our VPN connection and other software platforms using Single Sign-On (SSO).
+
+**Citations**:
+- HR and Ops (https://docs.google.com/document/d/1ixOvDqvRwOG4jG5XG3Sot3scNZCAtSpM7pAg1YyLx88)
