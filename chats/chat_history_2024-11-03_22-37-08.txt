@@ -1,0 +1,6 @@
+Timestamp: 2024-11-03_22-37-08
+User question: paid time off policy
+Bot response: The paid time off policy at our company provides employees with a specific number of days off that they can use for vacation, personal time, or sick leave with pay. For detailed information regarding the paid time off policy, please refer to the official documentation or reach out to the Human Resources department.
+
+**Citations**:
+- HR and Ops (https://docs.google.com/document/d/1ixOvDqvRwOG4jG5XG3Sot3scNZCAtSpM7pAg1YyLx88)
