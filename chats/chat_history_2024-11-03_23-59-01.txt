@@ -1,0 +1,18 @@
+Timestamp: 2024-11-03_23-59-01
+User question: PTO limits
+Bot response: PTO (Paid Time Off) limits typically refer to the maximum amount of paid leave an employee is allowed to take within a specific period, often dictated by company policy or employment agreements. These limits can vary based on several factors, including:
+
+1. **Accrual Rates**: Employees may accrue PTO at a certain rate (e.g., hours per pay period) up to a maximum limit.
+   
+2. **Carryover Policies**: Some companies allow unused PTO to carry over into the next year, while others have a "use-it-or-lose-it" policy where employees must use their PTO by a certain date or forfeit it.
+
+3. **Types of PTO**: PTO can be categorized into different types (e.g., vacation days, sick leave, personal days) with specific limitations for each category.
+
+4. **Company Policy**: Individual organizations set their own maximum limits on PTO, and these policies can differ significantly from one employer to another.
+
+5. **State Laws**: Depending on the jurisdiction, there may be legal regulations concerning PTO accumulation, usage, and payment upon termination.
+
+Employees should review their company’s employee handbook or talk to HR to understand their specific PTO limits and policies.
+
+**Citations**:
+- HR and Ops (https://docs.google.com/document/d/1ixOvDqvRwOG4jG5XG3Sot3scNZCAtSpM7pAg1YyLx88)
