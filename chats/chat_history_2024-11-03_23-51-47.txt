@@ -1,0 +1,14 @@
+Timestamp: 2024-11-03_23-51-47
+User question: how to recruit online students
+Bot response: To recruit online students, consider the following steps based on the provided context:
+
+1. **Map Purchase History**: For new clients, analyze their purchase history to understand their preferences and behaviors. This can be done by utilizing the selection criteria available within the name purchase platform, including their zip code.
+
+2. **Familiarize with Platforms**: While the Enrollment Strategist does not need to be a Subject Matter Expert (SME) in Digital strategies, it's important to be acquainted with the various platforms that can be used for recruitment. This understanding will aid in effectively targeting potential students.
+
+3. **Leverage Search Efforts**: Pair specific digital platforms with search efforts to enhance recruitment outcomes. Refer to the DRAFT Timeline for recommendations on which services to integrate with your recruitment strategy.
+
+By combining historical data analysis, knowledge of available platforms, and strategic search efforts, you can effectively recruit online students.
+
+**Citations**:
+- Enrollment Strategy (https://docs.google.com/document/d/1Bh0SwzfkO4ENjLy7a0fVzUUDpLQpsHqtwDE99eo8nok)
