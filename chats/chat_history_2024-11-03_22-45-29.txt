@@ -1,0 +1,6 @@
+Timestamp: 2024-11-03_22-45-29
+User question: how much paid time off do we get?
+Bot response: The provided context does not specify the amount of paid time off (PTO) that employees receive at Carnegie. For accurate information regarding PTO policies, it would be best to refer to your employee handbook or contact the Human Resources department directly.
+
+**Citations**:
+- HR and Ops (https://docs.google.com/document/d/1ixOvDqvRwOG4jG5XG3Sot3scNZCAtSpM7pAg1YyLx88)
