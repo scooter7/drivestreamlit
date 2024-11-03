@@ -101,7 +101,7 @@ def save_chat_to_github(user_question, bot_response):
     github_token = st.secrets["github"]["access_token"]
     headers = {
         'Accept': 'application/vnd.github.v3+json',
-        'Authorization': f'token {github_token}"
+        'Authorization': f'token {github_token}'
     }
     
     now = datetime.now()
