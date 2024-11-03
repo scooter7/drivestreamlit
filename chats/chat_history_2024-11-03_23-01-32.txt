@@ -1,0 +1,6 @@
+Timestamp: 2024-11-03_23-01-32
+User question: vacation policy
+Bot response: The provided context does not contain any information regarding the vacation policy at Carnegie.
+
+**Citations**:
+- HR and Ops (https://docs.google.com/document/d/1ixOvDqvRwOG4jG5XG3Sot3scNZCAtSpM7pAg1YyLx88)
