@@ -1,0 +1,6 @@
+Timestamp: 2024-11-03_23-10-36
+User question: paid time off policy
+Bot response: The provided context does not contain any information regarding a paid time off policy. To obtain details about the paid time off policy at Carnegie, you may need to refer to the company's employee handbook or contact the Human Resources department directly.
+
+**Citations**:
+- HR and Ops (https://docs.google.com/document/d/1ixOvDqvRwOG4jG5XG3Sot3scNZCAtSpM7pAg1YyLx88)
