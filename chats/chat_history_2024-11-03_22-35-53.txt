@@ -1,0 +1,6 @@
+Timestamp: 2024-11-03_22-35-53
+User question: do we have limits on vacation time
+Bot response: Based on the provided context, the information does not mention anything about vacation time or any specific policy regarding it at Carnegie. It focuses on promoting a culture of inclusion, addressing bias incidents, defining hate crimes, and reporting procedures. For information on vacation time limits, it would be best to refer to the organization's official HR policies or contact the HR department directly.
+
+**Citations**:
+- HR and Ops (https://docs.google.com/document/d/1ixOvDqvRwOG4jG5XG3Sot3scNZCAtSpM7pAg1YyLx88)
