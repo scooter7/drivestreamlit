@@ -1,0 +1,6 @@
+Timestamp: 2024-11-03_22-35-03
+User question: vacation time
+Bot response: Vacation time refers to designated periods when employees are allowed to take time off work for leisure or personal reasons. It is important for employees to properly request and track their vacation time to ensure accurate attendance records and smooth operations within the company.
+
+**Citations**:
+- HR and Ops (https://docs.google.com/document/d/1ixOvDqvRwOG4jG5XG3Sot3scNZCAtSpM7pAg1YyLx88)
