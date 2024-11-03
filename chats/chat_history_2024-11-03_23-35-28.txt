@@ -1,0 +1,6 @@
+Timestamp: 2024-11-03_23-35-28
+User question: dress code for meetings
+Bot response: The provided document does not contain specific information regarding the dress code for meetings. It primarily discusses bias incident reporting, logo usage, style guidelines, time tracking data, and parental leave benefits. If you need information about the dress code for meetings, you may want to refer to another source or company policy specifically addressing dress code standards.
+
+**Citations**:
+- HR and Ops (https://docs.google.com/document/d/1ixOvDqvRwOG4jG5XG3Sot3scNZCAtSpM7pAg1YyLx88)
