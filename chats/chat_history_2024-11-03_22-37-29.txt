@@ -1,0 +1,6 @@
+Timestamp: 2024-11-03_22-37-29
+User question: what do we use for email?
+Bot response: For email communications, you can use the company's standard logo as well. This will help maintain consistency in branding across various communication channels, including emails.
+
+**Citations**:
+- HR and Ops (https://docs.google.com/document/d/1ixOvDqvRwOG4jG5XG3Sot3scNZCAtSpM7pAg1YyLx88)
