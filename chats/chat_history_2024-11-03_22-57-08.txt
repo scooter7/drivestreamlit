@@ -1,0 +1,6 @@
+Timestamp: 2024-11-03_22-57-08
+User question: what do we use for email?
+Bot response: To report a bias incident via email, you can contact Allison Letizi, VP, Human Resources, at hr@carnegiehighered.com.
+
+**Citations**:
+- HR and Ops (https://docs.google.com/document/d/1ixOvDqvRwOG4jG5XG3Sot3scNZCAtSpM7pAg1YyLx88)
