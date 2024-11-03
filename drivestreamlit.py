@@ -44,14 +44,18 @@ def get_document_content(doc_id):
 
 # Function to find sections containing any term from the user's question
 def find_relevant_sections(content, question):
-    # Split the question into individual words for matching
     question_terms = set(word.lower() for word in question.split())
-    
     matched_sections = []
+    fallback_sections = []
+
     for paragraph in content.split("\n"):
         if any(term in paragraph.lower() for term in question_terms):
             matched_sections.append(paragraph.strip())
-    return matched_sections
+        elif any(keyword in paragraph.lower() for keyword in ["digital", "strategy", "market", "online"]):
+            fallback_sections.append(paragraph.strip())
+
+    # Use fallback sections if no direct matches
+    return matched_sections if matched_sections else fallback_sections
 
 # Function to dynamically assemble context with found matches
 def assemble_context(matched_sections, max_tokens=3000):
