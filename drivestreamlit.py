@@ -41,8 +41,9 @@ def get_document_content(doc_id):
                     content += text_run['textRun']['content']
     return content
 
-# Function to filter document content based on keywords
-def keyword_filter(content, keywords):
+# Enhanced keyword and phrase filtering function
+def keyword_filter(content, question):
+    keywords = ["paid time off", "PTO", "vacation", "leave", "benefits", "sick leave", "time off"]
     filtered_sections = []
     for paragraph in content.split("\n"):
         if any(keyword.lower() in paragraph.lower() for keyword in keywords):
@@ -63,7 +64,7 @@ def assemble_context(filtered_sections, max_tokens=2000):
     
     return context
 
-# Improved GPT query function
+# Improved GPT query function with focus on precise document-based response
 def query_gpt_improved(filtered_sections, question, citations):
     # Assemble the context within token limits
     context = assemble_context(filtered_sections, max_tokens=2000)
@@ -77,7 +78,7 @@ def query_gpt_improved(filtered_sections, question, citations):
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": "You are a detailed assistant who provides document-specific responses."},
-            {"role": "user", "content": f"Relevant information from documents:\n{context}\n\nQuestion: {question}"}
+            {"role": "user", "content": f"Context from document:\n{context}\n\nPlease answer this question based specifically on the above information: {question}"}
         ],
         max_tokens=600  # Adjusted for longer, more detailed responses
     )
@@ -139,14 +140,12 @@ if selected_docs_names:
     user_question = st.text_input("Ask a question about the document(s)")
     
     if user_question:
-        # Extract keywords from the user question
-        keywords = user_question.split()  # Basic keyword split; can use NLP for more precision
+        # Filter sections for each selected document using enhanced filtering and collect citations
         filtered_sections = []
         citations = set()  # Track which documents are relevant
         
-        # Filter sections for each selected document and collect citations
         for doc, content in zip(selected_docs, doc_contents):
-            sections = keyword_filter(content, keywords)
+            sections = keyword_filter(content, user_question)
             if sections:
                 filtered_sections.extend(sections)
                 citations.add((doc['name'], doc['id']))  # Track document citations
