@@ -49,34 +49,37 @@ def keyword_filter(content, keywords):
             filtered_sections.append(paragraph)
     return filtered_sections
 
-# Function to truncate content to stay within token limits
-def truncate_content(filtered_sections, max_tokens=1600):
-    # GPT-3.5-turbo supports ~4096 tokens, with input and response tokens included. 
-    # To stay safe, we limit content to 1600 tokens (approx. ~8000 characters)
-    truncated_content = ""
+# Function to dynamically assemble context within token limits
+def assemble_context(filtered_sections, max_tokens=2000):
+    context = ""
+    tokens_used = 0
+    
     for section in filtered_sections:
-        if len(truncated_content) + len(section) > max_tokens:
+        section_tokens = len(section.split())
+        if tokens_used + section_tokens > max_tokens:
             break
-        truncated_content += section + "\n"
-    return truncated_content
+        context += section + "\n"
+        tokens_used += section_tokens
+    
+    return context
 
-# Function to query GPT-3.5-turbo
-def query_gpt(filtered_sections, question, citations):
-    # Truncate content to ensure it fits within the token limit
-    context = truncate_content(filtered_sections, max_tokens=1600)
+# Improved GPT query function
+def query_gpt_improved(filtered_sections, question, citations):
+    # Assemble the context within token limits
+    context = assemble_context(filtered_sections, max_tokens=2000)
     
     # If no relevant sections were found, return early
     if not context:
-        return "Sorry, no relevant information was found in the document regarding your query."
+        return "No relevant information was found in the document regarding your query."
     
-    # Query GPT-3.5-turbo with the context and question
+    # Query GPT-4o-mini with the context and question
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": f"Context: {context}\n\nAnswer the following question: {question}"}
+            {"role": "system", "content": "You are a detailed assistant who provides document-specific responses."},
+            {"role": "user", "content": f"Relevant information from documents:\n{context}\n\nQuestion: {question}"}
         ],
-        max_tokens=500  # Adjust based on the desired length of the response
+        max_tokens=600  # Adjusted for longer, more detailed responses
     )
 
     # Extract the response content
@@ -136,8 +139,8 @@ if selected_docs_names:
     user_question = st.text_input("Ask a question about the document(s)")
     
     if user_question:
-        # Use keywords to filter the document
-        keywords = user_question.split()  # Simple keyword extraction from the user question
+        # Extract keywords from the user question
+        keywords = user_question.split()  # Basic keyword split; can use NLP for more precision
         filtered_sections = []
         citations = set()  # Track which documents are relevant
         
@@ -148,8 +151,8 @@ if selected_docs_names:
                 filtered_sections.extend(sections)
                 citations.add((doc['name'], doc['id']))  # Track document citations
         
-        # Query GPT-3.5-turbo with the filtered sections
-        answer = query_gpt(filtered_sections, user_question, citations)
+        # Query GPT with improved context handling
+        answer = query_gpt_improved(filtered_sections, user_question, citations)
         
         if answer:
             st.write(f"**Answer:** {answer}")
