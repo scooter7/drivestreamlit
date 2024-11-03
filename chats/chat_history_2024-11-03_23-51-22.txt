@@ -1,0 +1,6 @@
+Timestamp: 2024-11-03_23-51-22
+User question: paid time off policy
+Bot response: The provided context does not contain any information regarding the paid time off policy. Therefore, I'm unable to provide a specific answer regarding that topic.
+
+**Citations**:
+- HR and Ops (https://docs.google.com/document/d/1ixOvDqvRwOG4jG5XG3Sot3scNZCAtSpM7pAg1YyLx88)
