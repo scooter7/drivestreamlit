@@ -1,0 +1,6 @@
+Timestamp: 2024-11-03_22-45-14
+User question: how much vacation time do we get?
+Bot response: The information provided does not specify the amount of vacation time employees receive at Carnegie. Typically, details about vacation time are outlined in the employee handbook or HR policies. It would be best to contact the Human Resources department directly for accurate and specific information regarding vacation benefits. You can reach them by calling Allison Letizi at (978) 842-2751 during business hours.
+
+**Citations**:
+- HR and Ops (https://docs.google.com/document/d/1ixOvDqvRwOG4jG5XG3Sot3scNZCAtSpM7pAg1YyLx88)
