@@ -42,48 +42,41 @@ def get_document_content(doc_id):
                     content += text_run['textRun']['content']
     return content
 
-# Granular keyword filtering based on question-specific keywords
-def keyword_filter(content, question):
-    keywords_map = {
-        "email": ["email system", "email platform", "communication", "IT", "email address", "contact"],
-        "vacation": ["vacation policy", "PTO", "paid time off", "leave policy", "time off", "benefits"]
-    }
+# Function to find sections containing words from the user's question
+def find_relevant_sections(content, question):
+    # Split the question into unique words to use for searching the document
+    question_words = set(word.lower() for word in question.split())
     
-    # Select keywords based on question
-    relevant_keywords = []
-    if "email" in question.lower():
-        relevant_keywords = keywords_map["email"]
-    elif "vacation" in question.lower() or "time off" in question.lower():
-        relevant_keywords = keywords_map["vacation"]
-    
-    # Extract sentences containing relevant keywords
-    filtered_sentences = []
+    # Extract paragraphs containing any word from the question
+    matched_sections = []
     for paragraph in content.split("\n"):
-        for sentence in paragraph.split(". "):  # Split by sentence for more control
-            if any(keyword.lower() in sentence.lower() for keyword in relevant_keywords):
-                filtered_sentences.append(sentence.strip())
-    return filtered_sentences
+        if any(word in paragraph.lower() for word in question_words):
+            matched_sections.append(paragraph.strip())
+    return matched_sections
 
-# Function to dynamically assemble context from top relevant sentences
-def assemble_context(filtered_sentences, max_tokens=3000):
+# Function to dynamically assemble context with found matches
+def assemble_context(matched_sections, max_tokens=3000):
+    if not matched_sections:
+        return "No relevant information was found based on your query."
+    
     context = ""
     tokens_used = 0
     
-    for sentence in filtered_sentences:
-        sentence_tokens = len(sentence.split())
-        if tokens_used + sentence_tokens > max_tokens:
+    for section in matched_sections:
+        section_tokens = len(section.split())
+        if tokens_used + section_tokens > max_tokens:
             break
-        context += sentence + ".\n"
-        tokens_used += sentence_tokens
+        context += section + "\n\n"
+        tokens_used += section_tokens
     
     return context
 
-# Improved GPT query function to focus on relevant context
-def query_gpt_improved(filtered_sentences, question, citations):
-    context = assemble_context(filtered_sentences, max_tokens=3000)
+# GPT query function focusing on document-based response
+def query_gpt_improved(matched_sections, question, citations):
+    context = assemble_context(matched_sections, max_tokens=3000)
     
-    if not context:
-        return "No relevant information was found in the document regarding your query."
+    if "No relevant information was found" in context:
+        return context  # Return this early if no matches were found
     
     # Display a portion of the context for debugging
     st.write("### Context Window for Debugging (Partial):")
@@ -150,16 +143,16 @@ if selected_docs_names:
     user_question = st.text_input("Ask a question about the document(s)")
     
     if user_question:
-        filtered_sentences = []
+        matched_sections = []
         citations = set()
         
         for doc, content in zip(selected_docs, doc_contents):
-            sentences = keyword_filter(content, user_question)
-            if sentences:
-                filtered_sentences.extend(sentences)
+            sections = find_relevant_sections(content, user_question)
+            if sections:
+                matched_sections.extend(sections)
                 citations.add((doc['name'], doc['id']))
         
-        answer = query_gpt_improved(filtered_sentences, user_question, citations)
+        answer = query_gpt_improved(matched_sections, user_question, citations)
         
         if answer:
             st.write(f"**Answer:** {answer}")
