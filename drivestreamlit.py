@@ -42,12 +42,14 @@ def get_document_content(doc_id):
                     content += text_run['textRun']['content']
     return content
 
-# Function to find sections that contain phrases from the user's question
+# Function to find sections containing any term from the user's question
 def find_relevant_sections(content, question):
-    # Use the full question to find matching phrases
+    # Split the question into individual words for matching
+    question_terms = set(word.lower() for word in question.split())
+    
     matched_sections = []
     for paragraph in content.split("\n"):
-        if question.lower() in paragraph.lower():
+        if any(term in paragraph.lower() for term in question_terms):
             matched_sections.append(paragraph.strip())
     return matched_sections
 
