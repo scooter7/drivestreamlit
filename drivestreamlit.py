@@ -44,7 +44,6 @@ def get_document_content(doc_id):
 
 # Enhanced keyword and phrase filtering function to match broader HR/IT terms
 def keyword_filter(content, question):
-    # Comprehensive list of keywords and phrases
     keywords = [
         "email system", "email platform", "communication", "software", "platform", "tool", "system",
         "leave", "benefits", "PTO", "vacation", "sick leave", "policy", "procedure", "IT", "software",
@@ -56,18 +55,30 @@ def keyword_filter(content, question):
             filtered_sections.append(paragraph)
     return filtered_sections
 
-# Function to dynamically assemble context with a limit on paragraphs
-def assemble_context(filtered_sections, max_paragraphs=20):
-    # Limit the context to a certain number of paragraphs for brevity
-    context = "\n".join(filtered_sections[:max_paragraphs])
+# Function to dynamically assemble context with an extended token limit
+def assemble_context(filtered_sections, max_tokens=3000):
+    context = ""
+    tokens_used = 0
+    
+    for section in filtered_sections:
+        section_tokens = len(section.split())
+        if tokens_used + section_tokens > max_tokens:
+            break
+        context += section + "\n"
+        tokens_used += section_tokens
+    
     return context
 
-# Enhanced GPT query function focusing on document-based response
+# Enhanced GPT query function focusing on document-based response with increased token context
 def query_gpt_improved(filtered_sections, question, citations):
-    context = assemble_context(filtered_sections, max_paragraphs=20)
+    context = assemble_context(filtered_sections, max_tokens=3000)
     
     if not context:
         return "No relevant information was found in the document regarding your query."
+    
+    # Display the context window for debugging purposes
+    st.write("### Context Window for Debugging:")
+    st.write(context)  # Output the context for inspection
     
     # Query GPT-4o-mini with specific prompt instructions to stay within context
     response = client.chat.completions.create(
@@ -76,7 +87,7 @@ def query_gpt_improved(filtered_sections, question, citations):
             {"role": "system", "content": "You are an assistant providing answers based only on provided document content."},
             {"role": "user", "content": f"Based on this context:\n{context}\n\nAnswer this question as specifically as possible: {question}"}
         ],
-        max_tokens=600
+        max_tokens=800  # Allow larger responses for clarity
     )
 
     # Extract response content and add citations
