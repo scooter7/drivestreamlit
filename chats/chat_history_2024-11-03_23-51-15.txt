@@ -1,0 +1,6 @@
+Timestamp: 2024-11-03_23-51-15
+User question: pad time off policy
+Bot response: The provided context does not contain any information regarding the "pad time off policy." Please refer to your company's official documentation or resources for details on that policy.
+
+**Citations**:
+- HR and Ops (https://docs.google.com/document/d/1ixOvDqvRwOG4jG5XG3Sot3scNZCAtSpM7pAg1YyLx88)
