@@ -1,0 +1,10 @@
+Timestamp: 2024-11-03_23-46-17
+User question: what do we use for email
+Bot response: For email, the following contact information should be used:
+
+- Email: info@carnegiehighered.com
+
+Additionally, all email addresses should be written in lowercase.
+
+**Citations**:
+- HR and Ops (https://docs.google.com/document/d/1ixOvDqvRwOG4jG5XG3Sot3scNZCAtSpM7pAg1YyLx88)
