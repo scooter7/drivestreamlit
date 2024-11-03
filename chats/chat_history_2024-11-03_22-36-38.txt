@@ -1,0 +1,6 @@
+Timestamp: 2024-11-03_22-36-38
+User question: paid time off policy
+Bot response: The paid time off policy is an essential benefit that employees appreciate. It allows employees to take time off work while still receiving their regular pay. Depending on the company's specific policy, paid time off may include vacation days, sick leave, and personal days. This policy is typically outlined in the employee handbook or on the company's intranet for easy access. Employees should follow the proper procedures for requesting and using paid time off, such as submitting requests in advance and coordinating with their manager to ensure coverage during their absence.
+
+**Citations**:
+- HR and Ops (https://docs.google.com/document/d/1ixOvDqvRwOG4jG5XG3Sot3scNZCAtSpM7pAg1YyLx88)
