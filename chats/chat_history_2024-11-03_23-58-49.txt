@@ -1,0 +1,6 @@
+Timestamp: 2024-11-03_23-58-49
+User question: PTO rules
+Bot response: The PTO (Paid Time Off) rules specify that you and your direct reports must submit your completed Harvest timesheet before logging off for the weekend. Additionally, if you or your direct reports take PTO on a Friday, it is important to submit the timesheet before leaving for PTO. This ensures that all hours worked are accurately recorded and accounted for.
+
+**Citations**:
+- HR and Ops (https://docs.google.com/document/d/1ixOvDqvRwOG4jG5XG3Sot3scNZCAtSpM7pAg1YyLx88)
