@@ -42,15 +42,12 @@ def get_document_content(doc_id):
                     content += text_run['textRun']['content']
     return content
 
-# Function to find sections containing words from the user's question
+# Function to find sections that contain phrases from the user's question
 def find_relevant_sections(content, question):
-    # Split the question into unique words to use for searching the document
-    question_words = set(word.lower() for word in question.split())
-    
-    # Extract paragraphs containing any word from the question
+    # Use the full question to find matching phrases
     matched_sections = []
     for paragraph in content.split("\n"):
-        if any(word in paragraph.lower() for word in question_words):
+        if question.lower() in paragraph.lower():
             matched_sections.append(paragraph.strip())
     return matched_sections
 
@@ -104,7 +101,7 @@ def save_chat_to_github(user_question, bot_response):
     github_token = st.secrets["github"]["access_token"]
     headers = {
         'Accept': 'application/vnd.github.v3+json',
-        'Authorization': f'token {github_token}'
+        'Authorization': f'token {github_token}"
     }
     
     now = datetime.now()
