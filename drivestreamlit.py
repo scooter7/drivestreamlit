@@ -12,7 +12,7 @@ GITHUB_HISTORY_URL = "https://api.github.com/repos/scooter7/drivestreamlit/conte
 
 # Set up OpenAI API client
 client = OpenAI(
-    api_key=st.secrets["openai"]["api_key"]  # Access OpenAI API key from Streamlit secrets
+    api_key=st.secrets["openai"]["api_key"]
 )
 
 # Google Drive and Docs API setup
@@ -42,41 +42,54 @@ def get_document_content(doc_id):
                     content += text_run['textRun']['content']
     return content
 
-# Enhanced keyword filtering tailored to specific common queries
+# Granular keyword filtering based on question-specific keywords
 def keyword_filter(content, question):
-    # Define keywords based on query
-    keywords = {
-        "email": ["email system", "email platform", "communication", "tool", "system", "IT"],
-        "vacation": ["vacation policy", "PTO", "paid time off", "leave policy", "benefits", "time off"]
+    keywords_map = {
+        "email": ["email system", "email platform", "communication", "IT", "email address", "contact"],
+        "vacation": ["vacation policy", "PTO", "paid time off", "leave policy", "time off", "benefits"]
     }
     
-    # Select keyword list based on query
-    relevant_keywords = keywords.get("vacation" if "vacation" in question.lower() else "email", [])
+    # Select keywords based on question
+    relevant_keywords = []
+    if "email" in question.lower():
+        relevant_keywords = keywords_map["email"]
+    elif "vacation" in question.lower() or "time off" in question.lower():
+        relevant_keywords = keywords_map["vacation"]
     
-    filtered_sections = []
+    # Extract sentences containing relevant keywords
+    filtered_sentences = []
     for paragraph in content.split("\n"):
-        if any(keyword.lower() in paragraph.lower() for keyword in relevant_keywords):
-            filtered_sections.append(paragraph)
-    return filtered_sections
+        for sentence in paragraph.split(". "):  # Split by sentence for more control
+            if any(keyword.lower() in sentence.lower() for keyword in relevant_keywords):
+                filtered_sentences.append(sentence.strip())
+    return filtered_sentences
 
-# Function to dynamically assemble context using a chunking strategy
-def assemble_context(filtered_sections, max_chunks=10):
-    # Limit to top 10 relevant paragraphs
-    context = "\n\n".join(filtered_sections[:max_chunks])
+# Function to dynamically assemble context from top relevant sentences
+def assemble_context(filtered_sentences, max_tokens=3000):
+    context = ""
+    tokens_used = 0
+    
+    for sentence in filtered_sentences:
+        sentence_tokens = len(sentence.split())
+        if tokens_used + sentence_tokens > max_tokens:
+            break
+        context += sentence + ".\n"
+        tokens_used += sentence_tokens
+    
     return context
 
-# Enhanced GPT query function focusing on document-based response with tailored context
-def query_gpt_improved(filtered_sections, question, citations):
-    context = assemble_context(filtered_sections, max_chunks=10)
+# Improved GPT query function to focus on relevant context
+def query_gpt_improved(filtered_sentences, question, citations):
+    context = assemble_context(filtered_sentences, max_tokens=3000)
     
     if not context:
         return "No relevant information was found in the document regarding your query."
     
-    # Display a portion of the context for inspection
+    # Display a portion of the context for debugging
     st.write("### Context Window for Debugging (Partial):")
     st.write(context[:1500])  # Display first 1500 characters for inspection
     
-    # Query GPT-4o-mini with specific prompt instructions to stay within context
+    # Query GPT-4o-mini
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
@@ -86,7 +99,7 @@ def query_gpt_improved(filtered_sections, question, citations):
         max_tokens=800
     )
 
-    # Extract response content and add citations
+    # Extract response and add citations
     bot_response = response.choices[0].message.content
     doc_links = "\n".join([f"- {doc_name} (https://docs.google.com/document/d/{doc_id})" for doc_name, doc_id in citations])
     bot_response += f"\n\n**Citations**:\n{doc_links}"
@@ -137,16 +150,16 @@ if selected_docs_names:
     user_question = st.text_input("Ask a question about the document(s)")
     
     if user_question:
-        filtered_sections = []
-        citations = set()  # Track document citations
+        filtered_sentences = []
+        citations = set()
         
         for doc, content in zip(selected_docs, doc_contents):
-            sections = keyword_filter(content, user_question)
-            if sections:
-                filtered_sections.extend(sections)
+            sentences = keyword_filter(content, user_question)
+            if sentences:
+                filtered_sentences.extend(sentences)
                 citations.add((doc['name'], doc['id']))
         
-        answer = query_gpt_improved(filtered_sections, user_question, citations)
+        answer = query_gpt_improved(filtered_sentences, user_question, citations)
         
         if answer:
             st.write(f"**Answer:** {answer}")
