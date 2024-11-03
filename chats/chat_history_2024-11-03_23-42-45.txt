@@ -1,0 +1,6 @@
+Timestamp: 2024-11-03_23-42-45
+User question: what do we use for gmail?
+Bot response: For Gmail addresses, always use lowercase letters.
+
+**Citations**:
+- HR and Ops (https://docs.google.com/document/d/1ixOvDqvRwOG4jG5XG3Sot3scNZCAtSpM7pAg1YyLx88)
