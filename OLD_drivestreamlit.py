@@ -51,8 +51,7 @@ def keyword_filter(content, keywords):
 
 # Function to truncate content to stay within token limits
 def truncate_content(filtered_sections, max_tokens=1600):
-    # GPT-3.5-turbo supports ~4096 tokens, with input and response tokens included. 
-    # To stay safe, we limit content to 1600 tokens (approx. ~8000 characters)
+    # GPT-4o-mini supports a larger context window, but for safety, limit to 1600 tokens
     truncated_content = ""
     for section in filtered_sections:
         if len(truncated_content) + len(section) > max_tokens:
@@ -60,7 +59,7 @@ def truncate_content(filtered_sections, max_tokens=1600):
         truncated_content += section + "\n"
     return truncated_content
 
-# Function to query GPT-3.5-turbo
+# Function to query GPT-4o-mini
 def query_gpt(filtered_sections, question, citations):
     # Truncate content to ensure it fits within the token limit
     context = truncate_content(filtered_sections, max_tokens=1600)
@@ -69,9 +68,9 @@ def query_gpt(filtered_sections, question, citations):
     if not context:
         return "Sorry, no relevant information was found in the document regarding your query."
     
-    # Query GPT-3.5-turbo with the context and question
+    # Query GPT-4o-mini with the context and question
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",  # Specify the GPT-4o-mini model
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": f"Context: {context}\n\nAnswer the following question: {question}"}
@@ -148,7 +147,7 @@ if selected_docs_names:
                 filtered_sections.extend(sections)
                 citations.add((doc['name'], doc['id']))  # Track document citations
         
-        # Query GPT-3.5-turbo with the filtered sections
+        # Query GPT-4o-mini with the filtered sections
         answer = query_gpt(filtered_sections, user_question, citations)
         
         if answer:
