@@ -31,7 +31,23 @@ docs_service = build('docs', 'v1', credentials=credentials)
 sheets_service = build('sheets', 'v4', credentials=credentials)
 slides_service = build('slides', 'v1', credentials=credentials)
 
-# Functions to get files from Google Drive based on mimeType
+# Debugging function: List all files in the folder to identify any visibility or mimeType issues
+def list_all_files_in_folder(folder_id):
+    query = f"'{folder_id}' in parents"
+    results = drive_service.files().list(q=query, fields="files(id, name, mimeType)").execute()
+    items = results.get('files', [])
+    
+    # Print each file's name and mimeType to the console
+    st.write("Files in folder with mimeTypes:")
+    for item in items:
+        st.write(f"File: {item['name']}, MimeType: {item['mimeType']}")
+    return items
+
+# Call the debugging function to check files in the folder
+folder_id = st.secrets["google"]["folder_id"]
+all_files = list_all_files_in_folder(folder_id)
+
+# Functions to get files by mimeType
 def get_google_files_from_folder(folder_id, mime_type):
     query = f"'{folder_id}' in parents and mimeType='{mime_type}'"
     results = drive_service.files().list(q=query, fields="files(id, name)").execute()
@@ -70,15 +86,19 @@ def get_slide_content(slide_id):
                         content += text_run['textRun']['content']
     return content
 
-# Streamlit UI for selecting files
-folder_id = st.secrets["google"]["folder_id"]  # Retrieve the folder ID from Streamlit secrets
+# Separate files by type
 docs = get_google_files_from_folder(folder_id, 'application/vnd.google-apps.document')
 sheets = get_google_files_from_folder(folder_id, 'application/vnd.google-apps.spreadsheet')
 slides = get_google_files_from_folder(folder_id, 'application/vnd.google-apps.presentation')
 
+# Display options for selection in Streamlit UI
 doc_choices = [doc['name'] for doc in docs]
 sheet_choices = [sheet['name'] for sheet in sheets]
 slide_choices = [slide['name'] for slide in slides]
+
+st.write("Available Google Docs:", doc_choices)
+st.write("Available Google Sheets:", sheet_choices)
+st.write("Available Google Slides:", slide_choices)
 
 selected_docs_names = st.multiselect("Select Google Docs to query", doc_choices)
 selected_sheets_names = st.multiselect("Select Google Sheets to query", sheet_choices)
