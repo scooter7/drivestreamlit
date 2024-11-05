@@ -15,31 +15,86 @@ client = OpenAI(
     api_key=st.secrets["openai"]["api_key"]  # Access OpenAI API key from Streamlit secrets
 )
 
-# Google Drive and Docs API setup
-SCOPES = ['https://www.googleapis.com/auth/drive.readonly', 'https://www.googleapis.com/auth/documents.readonly']
+# Google Drive, Docs, Sheets, and Slides API setup
+SCOPES = [
+    'https://www.googleapis.com/auth/drive.readonly', 
+    'https://www.googleapis.com/auth/documents.readonly', 
+    'https://www.googleapis.com/auth/spreadsheets.readonly', 
+    'https://www.googleapis.com/auth/presentations.readonly'
+]
 credentials = service_account.Credentials.from_service_account_info(
-    st.secrets["google"], scopes=SCOPES)  # Access Google credentials from Streamlit secrets
+    st.secrets["google"], scopes=SCOPES
+)
 
 drive_service = build('drive', 'v3', credentials=credentials)
 docs_service = build('docs', 'v1', credentials=credentials)
+sheets_service = build('sheets', 'v4', credentials=credentials)
+slides_service = build('slides', 'v1', credentials=credentials)
 
-# Function to get docs from Google Drive
-def get_google_docs_from_folder(folder_id):
-    query = f"'{folder_id}' in parents and mimeType='application/vnd.google-apps.document'"
+# Functions to get files from Google Drive based on mimeType
+def get_google_files_from_folder(folder_id, mime_type):
+    query = f"'{folder_id}' in parents and mimeType='{mime_type}'"
     results = drive_service.files().list(q=query, fields="files(id, name)").execute()
-    items = results.get('files', [])
-    return items
+    return results.get('files', [])
 
-# Function to get content from a Google Doc
+# Functions to retrieve content from Google Docs, Sheets, and Slides
 def get_document_content(doc_id):
     document = docs_service.documents().get(documentId=doc_id).execute()
     content = ""
-    for element in document.get('body').get('content'):
+    for element in document.get('body').get('content', []):
         if 'paragraph' in element:
             for text_run in element['paragraph']['elements']:
                 if 'textRun' in text_run:
                     content += text_run['textRun']['content']
     return content
+
+def get_sheet_content(sheet_id):
+    sheet = sheets_service.spreadsheets().get(spreadsheetId=sheet_id).execute()
+    sheet_content = ""
+    for sheet in sheet['sheets']:
+        sheet_name = sheet['properties']['title']
+        result = sheets_service.spreadsheets().values().get(spreadsheetId=sheet_id, range=sheet_name).execute()
+        values = result.get('values', [])
+        for row in values:
+            sheet_content += ' '.join(row) + "\n"
+    return sheet_content
+
+def get_slide_content(slide_id):
+    presentation = slides_service.presentations().get(presentationId=slide_id).execute()
+    content = ""
+    for slide in presentation.get('slides', []):
+        for element in slide.get('pageElements', []):
+            if 'shape' in element and 'text' in element['shape']:
+                for text_run in element['shape']['text']['textElements']:
+                    if 'textRun' in text_run:
+                        content += text_run['textRun']['content']
+    return content
+
+# Streamlit UI for selecting files
+folder_id = st.secrets["google"]["folder_id"]  # Retrieve the folder ID from Streamlit secrets
+docs = get_google_files_from_folder(folder_id, 'application/vnd.google-apps.document')
+sheets = get_google_files_from_folder(folder_id, 'application/vnd.google-apps.spreadsheet')
+slides = get_google_files_from_folder(folder_id, 'application/vnd.google-apps.presentation')
+
+doc_choices = [doc['name'] for doc in docs]
+sheet_choices = [sheet['name'] for sheet in sheets]
+slide_choices = [slide['name'] for slide in slides]
+
+selected_docs_names = st.multiselect("Select Google Docs to query", doc_choices)
+selected_sheets_names = st.multiselect("Select Google Sheets to query", sheet_choices)
+selected_slides_names = st.multiselect("Select Google Slides to query", slide_choices)
+
+# Retrieve content from selected files
+selected_docs = [doc for doc in docs if doc['name'] in selected_docs_names]
+selected_sheets = [sheet for sheet in sheets if sheet['name'] in selected_sheets_names]
+selected_slides = [slide for slide in slides if slide['name'] in selected_slides_names]
+
+doc_contents = [get_document_content(doc['id']) for doc in selected_docs]
+sheet_contents = [get_sheet_content(sheet['id']) for sheet in selected_sheets]
+slide_contents = [get_slide_content(slide['id']) for slide in selected_slides]
+
+# Combine all contents for querying
+all_contents = doc_contents + sheet_contents + slide_contents
 
 # Function to filter document content based on keywords
 def keyword_filter(content, keywords):
@@ -51,7 +106,6 @@ def keyword_filter(content, keywords):
 
 # Function to truncate content to stay within token limits
 def truncate_content(filtered_sections, max_tokens=1600):
-    # GPT-4o-mini supports a larger context window, but for safety, limit to 1600 tokens
     truncated_content = ""
     for section in filtered_sections:
         if len(truncated_content) + len(section) > max_tokens:
@@ -61,27 +115,21 @@ def truncate_content(filtered_sections, max_tokens=1600):
 
 # Function to query GPT-4o-mini
 def query_gpt(filtered_sections, question, citations):
-    # Truncate content to ensure it fits within the token limit
     context = truncate_content(filtered_sections, max_tokens=1600)
     
-    # If no relevant sections were found, return early
     if not context:
         return "Sorry, no relevant information was found in the document regarding your query."
     
-    # Query GPT-4o-mini with the context and question
     response = client.chat.completions.create(
-        model="gpt-4o-mini",  # Specify the GPT-4o-mini model
+        model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": f"Context: {context}\n\nAnswer the following question: {question}"}
         ],
-        max_tokens=500  # Adjust based on the desired length of the response
+        max_tokens=500
     )
 
-    # Extract the response content
     bot_response = response.choices[0].message.content
-
-    # Add citations to the response
     doc_links = "\n".join([f"- {doc_name} (https://docs.google.com/document/d/{doc_id})" for doc_name, doc_id in citations])
     bot_response += f"\n\n**Citations**:\n{doc_links}"
 
@@ -99,10 +147,7 @@ def save_chat_to_github(user_question, bot_response):
     timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
     file_name = f"chat_history_{timestamp}.txt"
     
-    # Prepare chat content
     chat_content = f"Timestamp: {timestamp}\nUser question: {user_question}\nBot response: {bot_response}"
-    
-    # Encode the content for GitHub
     encoded_content = base64.b64encode(chat_content.encode('utf-8')).decode('utf-8')
     
     data = {
@@ -111,7 +156,6 @@ def save_chat_to_github(user_question, bot_response):
         "branch": "main"
     }
     
-    # Save to GitHub
     try:
         response = httpx.put(f"{GITHUB_HISTORY_URL}/{file_name}", headers=headers, json=data)
         response.raise_for_status()
@@ -121,36 +165,35 @@ def save_chat_to_github(user_question, bot_response):
     except Exception as e:
         st.error(f"An error occurred: {e}")
 
-# Streamlit App
-folder_id = st.secrets["google"]["folder_id"]  # Retrieve the folder ID from Streamlit secrets
-docs = get_google_docs_from_folder(folder_id)
-doc_choices = [doc['name'] for doc in docs]
-selected_docs_names = st.multiselect("Select documents to query", doc_choices)
-
-if selected_docs_names:
-    selected_docs = [doc for doc in docs if doc['name'] in selected_docs_names]
-    doc_contents = [get_document_content(doc['id']) for doc in selected_docs]
-    
-    # Ask the user for the query
-    user_question = st.text_input("Ask a question about the document(s)")
+# Process query if files are selected
+if selected_docs_names or selected_sheets_names or selected_slides_names:
+    user_question = st.text_input("Ask a question about the selected files")
     
     if user_question:
-        # Use keywords to filter the document
-        keywords = user_question.split()  # Simple keyword extraction from the user question
+        keywords = user_question.split()
         filtered_sections = []
-        citations = set()  # Track which documents are relevant
+        citations = set()
         
-        # Filter sections for each selected document and collect citations
         for doc, content in zip(selected_docs, doc_contents):
             sections = keyword_filter(content, keywords)
             if sections:
                 filtered_sections.extend(sections)
-                citations.add((doc['name'], doc['id']))  # Track document citations
+                citations.add((doc['name'], doc['id']))
         
-        # Query GPT-4o-mini with the filtered sections
+        for sheet, content in zip(selected_sheets, sheet_contents):
+            sections = keyword_filter(content, keywords)
+            if sections:
+                filtered_sections.extend(sections)
+                citations.add((sheet['name'], sheet['id']))
+        
+        for slide, content in zip(selected_slides, slide_contents):
+            sections = keyword_filter(content, keywords)
+            if sections:
+                filtered_sections.extend(sections)
+                citations.add((slide['name'], slide['id']))
+        
         answer = query_gpt(filtered_sections, user_question, citations)
         
         if answer:
             st.write(f"**Answer:** {answer}")
-            # Save chat to GitHub
             save_chat_to_github(user_question, answer)
