@@ -2,7 +2,7 @@ import os
 import streamlit as st
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
-from openai import OpenAI  # Import OpenAI client
+from openai import OpenAI
 from datetime import datetime
 import base64
 import httpx
@@ -31,27 +31,42 @@ docs_service = build('docs', 'v1', credentials=credentials)
 sheets_service = build('sheets', 'v4', credentials=credentials)
 slides_service = build('slides', 'v1', credentials=credentials)
 
-# Debugging function: List all files in the folder to identify any visibility or mimeType issues
+# Debugging function: List all files in the folder with mimeType
 def list_all_files_in_folder(folder_id):
     query = f"'{folder_id}' in parents"
     results = drive_service.files().list(q=query, fields="files(id, name, mimeType)").execute()
     items = results.get('files', [])
     
-    # Print each file's name and mimeType to the console
+    # Display all files with their mimeTypes for debugging
     st.write("Files in folder with mimeTypes:")
-    for item in items:
-        st.write(f"File: {item['name']}, MimeType: {item['mimeType']}")
+    if items:
+        for item in items:
+            st.write(f"File Name: {item['name']}, ID: {item['id']}, MimeType: {item['mimeType']}")
+    else:
+        st.write("No files found in the specified folder.")
     return items
 
-# Call the debugging function to check files in the folder
+# Retrieve folder ID from Streamlit secrets and list all files in it
 folder_id = st.secrets["google"]["folder_id"]
 all_files = list_all_files_in_folder(folder_id)
 
-# Functions to get files by mimeType
-def get_google_files_from_folder(folder_id, mime_type):
-    query = f"'{folder_id}' in parents and mimeType='{mime_type}'"
-    results = drive_service.files().list(q=query, fields="files(id, name)").execute()
-    return results.get('files', [])
+# Separate files by type based on mimeTypes
+docs = [file for file in all_files if file['mimeType'] == 'application/vnd.google-apps.document']
+sheets = [file for file in all_files if file['mimeType'] == 'application/vnd.google-apps.spreadsheet']
+slides = [file for file in all_files if file['mimeType'] == 'application/vnd.google-apps.presentation']
+
+# Display options for selection in Streamlit UI
+doc_choices = [doc['name'] for doc in docs]
+sheet_choices = [sheet['name'] for sheet in sheets]
+slide_choices = [slide['name'] for slide in slides]
+
+st.write("Available Google Docs:", doc_choices)
+st.write("Available Google Sheets:", sheet_choices)
+st.write("Available Google Slides:", slide_choices)
+
+selected_docs_names = st.multiselect("Select Google Docs to query", doc_choices)
+selected_sheets_names = st.multiselect("Select Google Sheets to query", sheet_choices)
+selected_slides_names = st.multiselect("Select Google Slides to query", slide_choices)
 
 # Functions to retrieve content from Google Docs, Sheets, and Slides
 def get_document_content(doc_id):
@@ -85,24 +100,6 @@ def get_slide_content(slide_id):
                     if 'textRun' in text_run:
                         content += text_run['textRun']['content']
     return content
-
-# Separate files by type
-docs = get_google_files_from_folder(folder_id, 'application/vnd.google-apps.document')
-sheets = get_google_files_from_folder(folder_id, 'application/vnd.google-apps.spreadsheet')
-slides = get_google_files_from_folder(folder_id, 'application/vnd.google-apps.presentation')
-
-# Display options for selection in Streamlit UI
-doc_choices = [doc['name'] for doc in docs]
-sheet_choices = [sheet['name'] for sheet in sheets]
-slide_choices = [slide['name'] for slide in slides]
-
-st.write("Available Google Docs:", doc_choices)
-st.write("Available Google Sheets:", sheet_choices)
-st.write("Available Google Slides:", slide_choices)
-
-selected_docs_names = st.multiselect("Select Google Docs to query", doc_choices)
-selected_sheets_names = st.multiselect("Select Google Sheets to query", sheet_choices)
-selected_slides_names = st.multiselect("Select Google Slides to query", slide_choices)
 
 # Retrieve content from selected files
 selected_docs = [doc for doc in docs if doc['name'] in selected_docs_names]
